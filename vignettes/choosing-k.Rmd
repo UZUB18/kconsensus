@@ -15,6 +15,9 @@ knitr::opts_chunk$set(
   fig.height = 4.6,
   out.width = "100%"
 )
+# Keep progress messages out of the rendered page, even when rendering
+# from an interactive session.
+options(kconsensus.verbose = FALSE)
 ```
 
 ```{r setup}
@@ -86,6 +89,8 @@ lead <- unclear$recommended_k
 lead_votes <- unclear$agreement$votes[unclear$agreement$k == lead]
 margin_clear <- signif(as.data.frame(clear)$margin[1], 2)
 margin_unclear <- signif(as.data.frame(unclear)$margin[1], 2)
+silhouette_clear <- round(range(clear$recommendations$silhouette$scores$score), 2)
+silhouette_unclear <- round(range(unclear$recommendations$silhouette$scores$score), 2)
 ```
 
 Even on structureless noise, K = `r lead` received `r lead_votes` of
@@ -102,7 +107,11 @@ The warning signs are elsewhere in the output:
 * **The margins.** Silhouette preferred its K by `r margin_unclear` over the
   runner-up, compared with `r margin_clear` for the clear example. Margins are
   raw score differences, so compare them only within one method.
-* **The curves.** Flat index curves mean no K stands out.
+* **The axis values.** Each panel of the index plot has its own y-axis, so
+  even tiny differences fill the panel. Read the values: on this noise the
+  silhouette only ranges from `r silhouette_unclear[1]` to
+  `r silhouette_unclear[2]`, against `r silhouette_clear[1]` to
+  `r silhouette_clear[2]` for the clear example.
 
 ```{r noise-indices, fig.height = 6}
 plot(unclear, type = "indices")

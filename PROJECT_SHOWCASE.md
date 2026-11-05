@@ -22,7 +22,7 @@ and a separate Gap seed-stability study.
 
 | Evidence layer | Completed work | What it establishes |
 |---|---|---|
-| Unit tests | 686 assertions passed, without warnings; 99.9% line coverage | The tested implementation contracts hold |
+| Unit tests | 698 assertions passed, without warnings; 99.9% line coverage | The tested implementation contracts hold |
 | Separate-session package check | 0 errors, 0 warnings, 0 notes | The package passes the recorded development check |
 | Repeated-data study | 600 generated datasets; 700 consensus evaluations | Behavior under six specified designs and a paired K-range comparison |
 | Supplied benchmark | 19 valid runs and five expected-error cases | Reference agreement, input rejection and behavior on the supplied fixtures |

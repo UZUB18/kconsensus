@@ -52,7 +52,7 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
   expect_s3_class(p$data$k_factor, "factor")
   expect_identical(p$data$votes, c(0L, 0L, 4L, 1L, 0L))
   expect_equal(p$data$agreement_percent, c(0, 0, 80, 20, 0))
-  expect_identical(p$data$label, c("0 (0%)", "0 (0%)", "4 (80%)", "1 (20%)", "0 (0%)"))
+  expect_identical(p$data$label, c("", "", "4 (80%)", "1 (20%)", ""))
   expect_identical(
     as.character(p$data$role),
     c(
@@ -118,7 +118,7 @@ test_that("ties and zero-vote states are explicit and never pick an arbitrary wi
   p_zero <- plot(zero_res, type = "consensus")
 
   expect_identical(as.character(p_zero$data$role), rep("No eligible votes", 3L))
-  expect_identical(p_zero$data$label, rep("0 (NA)", 3L))
+  expect_identical(p_zero$data$label, rep("", 3L))
   expect_match(p_zero$labels$subtitle, "No eligible votes cast (agreement undefined)", fixed = TRUE)
   expect_match(p_zero$labels$subtitle, "Eligible denominator: 0 of 2 methods", fixed = TRUE)
 
@@ -314,13 +314,71 @@ test_that("undefined scores are shown as undefined in the matrix and indices vie
   expect_identical(dunn_k3$cell_label, "NA")
 
   indices_plot <- plot(res, type = "indices")
-  notes <- unlist(lapply(indices_plot$layers, function(layer) {
-    if (inherits(layer$geom, "GeomText")) layer$data$label
-  }))
-  expect_true("Undefined at K = 3" %in% notes)
-  expect_true("All scores undefined (undefined)" %in% notes)
+  panels <- levels(indices_plot$data$panel)
+  expect_true("Dunn | Abstained [undefined] | Undefined at K = 3" %in% panels)
+  expect_true("Davies-Bouldin | Abstained [undefined] | All scores undefined" %in% panels)
+  # Notes live in the panel titles, not in a text layer that can be clipped.
+  expect_false(any(vapply(indices_plot$layers, function(layer) {
+    inherits(layer$geom, "GeomText")
+  }, logical(1))))
   expect_renders(matrix_plot)
   expect_renders(indices_plot)
+
+  no_scores <- compute_consensus(list(
+    plot_vote("silhouette", 3L),
+    method_recommendation("gap", reason = "Gap failed.")
+  ))
+  expect_true(
+    "Gap Statistic | Abstained [undefined] | No scores available" %in%
+      levels(plot(no_scores, type = "indices")$data$panel)
+  )
+})
+
+test_that("plots stay legible at small sizes", {
+  failed <- method_recommendation("z", reason = "Failed.", scores = data.frame(k = 2:5))
+  many_abstentions <- compute_consensus(list(
+    plot_vote("silhouette", 3L),
+    method_recommendation(
+      "calinski_harabasz", reason = "Non-finite scores at K = 3.",
+      scores = data.frame(k = 2:5, score = c(10, NA, 20, 15))
+    ),
+    method_recommendation("davies_bouldin", reason = "Non-finite scores.", scores = data.frame(k = 2:5)),
+    method_recommendation("dunn", reason = "Non-finite scores.", scores = data.frame(k = 2:5)),
+    method_recommendation("gap", reason = "Gap failed."),
+    method_recommendation("elbow", NA_integer_, "ambiguous", "No threshold.", scores = data.frame(k = 2:5))
+  ))
+
+  # The list of methods that did not vote wraps instead of running off the plot.
+  subtitle_lines <- strsplit(plot(many_abstentions)$labels$subtitle, "\n")[[1]]
+  expect_gt(length(subtitle_lines), 3L)
+  expect_true(all(nchar(subtitle_lines) <= 62L))
+
+  # A legend with more than three keys uses two rows; two keys fit on one.
+  matrix_plot <- plot(many_abstentions, type = "matrix")
+  expect_identical(length(unique(matrix_plot$data$cell_state)), 4L)
+  expect_identical(matrix_plot$guides$guides$fill$params$nrow, 2L)
+  few_keys <- plot(compute_consensus(list(plot_vote("a", 3L), failed)), type = "matrix")
+  expect_identical(few_keys$guides$guides$fill$params$nrow, 1L)
+
+  # Overlapping K labels are dropped, and the legend keeps a fixed order.
+  wide <- compute_consensus(list(
+    plot_vote("a", 2L, data.frame(k = 2:15, score = c(1, seq(0.9, 0.3, length.out = 13)))),
+    plot_vote("b", 3L, data.frame(k = 2:15, score = c(0.5, 1, seq(0.9, 0.3, length.out = 12)))),
+    failed
+  ))
+  indices_plot <- plot(wide, type = "indices")
+  x_scale <- indices_plot$scales$get_scales("x")
+  expect_true(isTRUE(x_scale$guide$params$check.overlap))
+  colour_scale <- indices_plot$scales$get_scales("colour")
+  expect_identical(colour_scale$breaks, c("Eligible preferred K", "Evaluated K"))
+
+  for (p in list(plot(wide), plot(many_abstentions, type = "matrix"), indices_plot)) {
+    withr::with_options(list(), {
+      grDevices::png(tempfile(fileext = ".png"), width = 600, height = 450, res = 96)
+      expect_no_warning(print(p))
+      grDevices::dev.off()
+    })
+  }
 })
 
 test_that("an upper-boundary winner is called out in every plot caption", {

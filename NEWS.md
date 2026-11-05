@@ -36,10 +36,19 @@ First usable release.
   abstentions, flags and caveats, and `as.data.frame()` returns the methods,
   agreement or long-format scores table.
 * `plot()` draws consensus bars, raw index curves or a method-by-K evidence
-  matrix as customizable ggplot objects.
+  matrix as customizable ggplot objects. The plots stay legible in small
+  windows: notes about undefined scores appear in the panel titles, long lists
+  of non-voting methods wrap, legends with many keys use two rows, bars without
+  votes are unlabeled, overlapping K labels are dropped, and the legend order is
+  fixed.
 
 ## Documentation
 
+* A ready-made script, `system.file("scripts", "find_k_for_my_data.R",
+  package = "kconsensus")`, chooses K for a CSV or Excel file and saves the
+  plots, a summary and the data with a `cluster` column. It skips text and
+  constant columns and rows with missing values, and reads Dutch-style
+  semicolon CSV files.
 * The README describes the package with worked examples, and
   `vignette("choosing-k")` walks through a dataset where the methods agree and
   one where they do not.

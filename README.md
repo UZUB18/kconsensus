@@ -14,14 +14,36 @@ the vote as unanimous, majority, plurality, single vote, tie or no valid votes.
 
 ## Installation
 
-kconsensus is not on CRAN yet. Install the development version from a local
-copy of the source, for example from RStudio (which provides the pandoc needed
-to build the vignette):
+kconsensus is not on CRAN yet. Install it in one of these ways.
+
+From a shared package file (`kconsensus_0.1.0.tar.gz`):
+
+``` r
+install.packages(c("cluster", "clusterCrit", "ggplot2", "withr"))
+install.packages("path/to/kconsensus_0.1.0.tar.gz", repos = NULL, type = "source")
+```
+
+From a copy of the source folder:
 
 ``` r
 # install.packages("devtools")
-devtools::install("path/to/kconsensus", build_vignettes = TRUE)
+devtools::install("path/to/kconsensus", upgrade = FALSE)
 ```
+
+## Quickest start: the ready-made script
+
+The package includes a script that reads a CSV or Excel file, skips text
+columns, constant columns and rows with missing values, chooses K, and saves
+the plots, a summary and your data with a `cluster` column next to the file.
+Copy it, open it, and click **Source**:
+
+``` r
+file.copy(system.file("scripts", "find_k_for_my_data.R", package = "kconsensus"), "find_k.R")
+file.edit("find_k.R")
+```
+
+Only include columns that should define the groups: unrelated columns dilute
+the clusters. List ID, date or code columns in `exclude_columns`.
 
 ## Example
 

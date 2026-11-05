@@ -33,7 +33,7 @@ unclear # majority for K = 4 (3 of 5) -- even though there are no clusters!
 as.data.frame(unclear)[, c("method", "preferred_k", "margin")]
 as.data.frame(clear)[, c("method", "preferred_k", "margin")]
 summary(unclear)
-plot(unclear, type = "indices") # flat curves: no K stands out
+plot(unclear, type = "indices") # separate y-axes: silhouette only spans 0.37-0.42
 
 
 # 3. Weak and inconclusive votes -------------------------------------------------
@@ -105,5 +105,5 @@ ggplot2::ggsave(tempfile(fileext = ".png"), plot(clear), width = 7, height = 5)
 
 
 # 10. The automated checks ------------------------------------------------------------
-# devtools::test()  # Ctrl+Shift+T: 686 expectations, about a minute
+# devtools::test()  # Ctrl+Shift+T: 698 expectations, about a minute
 # devtools::check() # Ctrl+Shift+E: full R CMD check, about a minute
