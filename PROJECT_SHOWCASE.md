@@ -645,7 +645,7 @@ for (type in names(sizes)) {
 | Model shape | General K-means caveat is displayed. No automatic geometry detector or non-spherical clustering alternative was implemented. |
 | Large datasets | `methods` can leave out Gap and the distance-based indices, `nstart` and `B` trade precision for speed, and progress is reported in interactive sessions. Gap's reference simulations still run serially. |
 | Calculation failures | Failed fits, undefined indices and Gap failures now become reasoned abstentions with a warning. A method still abstains entirely if any tested K is undefined for it; scoring the remaining K is not implemented. |
-| Release metadata | The maintainer is the GitHub identity UZUB18 with a noreply address. CRAN would require a monitored maintainer email. |
+| Release metadata | The maintainer is UZUB18 <trbuzu@gmail.com>. A CRAN submission would usually list a person's full name rather than a handle. |
 | Website and project introduction | The README and the `choosing-k` vignette now introduce the package. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
 | Automated formatting | `air` was unavailable. Passing R checks does not mean an automatic formatter ran. |
 

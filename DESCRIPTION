@@ -2,7 +2,7 @@ Package: kconsensus
 Title: Transparent Consensus Diagnostics for K-Means Cluster Counts
 Version: 0.1.0
 Authors@R: 
-    person("UZUB18", email = "uzub18@users.noreply.github.com", role = c("aut", "cre"))
+    person("UZUB18", email = "trbuzu@gmail.com", role = c("aut", "cre"))
 Description: Compares candidate K-means cluster counts using the silhouette,
     Calinski-Harabasz, Davies-Bouldin and Dunn indices, the gap statistic and
     an optional elbow rule. Grades the support for the leading count as
