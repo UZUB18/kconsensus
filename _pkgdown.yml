@@ -1,0 +1,7 @@
+reference:
+  - title: Clustering and consensus
+    contents:
+      - kconsensus
+  - title: Visual diagnostics
+    contents:
+      - plot.kconsensus_result

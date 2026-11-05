@@ -1,0 +1,24 @@
+scenario,csv_path,labels_path,n_rows,n_features,generating_groups,valid_input,seed,scenario_design,expected_behavior_to_inspect
+cluster_stress_test,data/cluster_stress_test.csv,truth/cluster_stress_test_labels.csv,750,2,4 + outliers,True,20261105,"3 large groups, a nearby small fourth group, and scattered outliers",Methods may prefer 3 versus 4 or split offliers; do not assume generating K is optimal for K-means
+clear_3,data/clear_3.csv,truth/clear_3_labels.csv,540,2,3,True,20261202,"Three balanced, well-separated Gaussian groups",Sanity check: many K-means criteria should favor 3
+clear_5,data/clear_5.csv,truth/clear_5_labels.csv,600,2,5,True,20261299,Five well-separated Gaussian groups,Sanity check: many K-means criteria should favor 5
+overlap_3,data/overlap_3.csv,truth/overlap_3_labels.csv,600,2,3,True,20261396,Three heavily overlapping Gaussian groups,Lower silhouette values; ambiguous preferred K likely
+unbalanced_4,data/unbalanced_4.csv,truth/unbalanced_4_labels.csv,570,2,4,True,20261493,"Strongly unequal group sizes, including 11-point group",Check if small groups are ignored or merged
+anisotropic_3,data/anisotropic_3.csv,truth/anisotropic_3_labels.csv,600,2,3,True,20261590,"Three elongated, tilted Gaussian groups",K-means spherical-cluster bias; may over-split
+variable_density_3,data/variable_density_3.csv,truth/variable_density_3_labels.csv,600,2,3,True,20261687,Three groups with very different variance,Check density and variance bias
+concentric_rings_2,data/concentric_rings_2.csv,truth/concentric_rings_2_labels.csv,600,2,2,True,20261784,Two concentric non-convex rings,K-means partitions will not recover ring memberships well
+two_moons_2,data/two_moons_2.csv,truth/two_moons_2_labels.csv,600,2,2,True,20261881,Two interlocking non-convex crescent shapes,K-means may choose 2 but fail to recover the true shapes
+high_dim_noise_3,data/high_dim_noise_3.csv,truth/high_dim_noise_3_labels.csv,540,30,3,True,20261978,Three signal groups in first 3 of 30 columns; remaining 27 noisy,"Evaluate signal dilution, high-dimensional distances and runtime"
+uniform_no_clusters,data/uniform_no_clusters.csv,,600,2,none,True,20262075,Uniform 2D point cloud with no discrete generating groups,Package should not interpret a numerical winner as proof of true groups
+single_gaussian,data/single_gaussian.csv,,550,2,1 / unimodal,True,20262172,One correlated Gaussian distribution,K=1 is plausible; do not force a meaningful split
+outliers_3,data/outliers_3.csv,truth/outliers_3_labels.csv,585,2,3 + outliers,True,20262269,Three clean groups plus 45 uniformly scattered outliers,Check how outliers influence votes and inertia
+duplicate_points_3,data/duplicate_points_3.csv,truth/duplicate_points_3_labels.csv,405,2,3,True,20262366,Three groups plus 60 exact repeated observations,Handle duplicate observations; avoid invalid cluster indices
+many_12,data/many_12.csv,truth/many_12_labels.csv,780,2,12,True,20262463,Twelve well-separated groups in a ring,K=2:10 excludes generating K; detect upper boundary selection
+close_split_4,data/close_split_4.csv,truth/close_split_4_labels.csv,600,2,4,True,20262560,"Four generating groups, two with close centers",K=3 vs K=4 disagreement is plausible
+constant_feature_3,data/constant_feature_3.csv,truth/constant_feature_3_labels.csv,540,3,3,True,20262657,Three groups with a constant third numeric column,Valid numeric input; do not silently scale a zero-variance column
+tiny_3,data/tiny_3.csv,truth/tiny_3_labels.csv,18,2,3,True,20262754,Only eighteen observations in three groups,"Stress small-n indices, singleton partitions and K boundaries"
+invalid_all_identical,invalid/invalid_all_identical.csv,,80,2,none,False,20262851,Only one distinct data point repeated 80 times,Reject K>=2 with a clear message
+invalid_missing,invalid/invalid_missing.csv,,540,2,3,False,20262948,Includes missing numeric values,Reject input with NA
+invalid_infinite,invalid/invalid_infinite.csv,,540,2,3,False,20263045,Includes an infinite numeric value,Reject non-finite input
+invalid_few_distinct,invalid/invalid_few_distinct.csv,,100,2,2 distinct points,False,20263142,Only 2 distinct rows despite 100 observations,Reject requests for more than 2 nonempty clusters
+invalid_nonnumeric,invalid/invalid_nonnumeric.csv,,540,3,3,False,20271106,Character-valued category column alongside numeric features,Reject categorical input rather than silently encoding it

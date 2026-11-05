@@ -1,0 +1,24 @@
+Generated 23 scenarios
+cluster_stress_test          750 rows  2 cols | valid=True
+clear_3                      540 rows  2 cols | valid=True
+clear_5                      600 rows  2 cols | valid=True
+overlap_3                    600 rows  2 cols | valid=True
+unbalanced_4                 570 rows  2 cols | valid=True
+anisotropic_3                600 rows  2 cols | valid=True
+variable_density_3           600 rows  2 cols | valid=True
+concentric_rings_2           600 rows  2 cols | valid=True
+two_moons_2                  600 rows  2 cols | valid=True
+high_dim_noise_3             540 rows 30 cols | valid=True
+uniform_no_clusters          600 rows  2 cols | valid=True
+single_gaussian              550 rows  2 cols | valid=True
+outliers_3                   585 rows  2 cols | valid=True
+duplicate_points_3           405 rows  2 cols | valid=True
+many_12                      780 rows  2 cols | valid=True
+close_split_4                600 rows  2 cols | valid=True
+constant_feature_3           540 rows  3 cols | valid=True
+tiny_3                        18 rows  2 cols | valid=True
+invalid_all_identical         80 rows  2 cols | valid=False
+invalid_missing              540 rows  2 cols | valid=False
+invalid_infinite             540 rows  2 cols | valid=False
+invalid_few_distinct         100 rows  2 cols | valid=False
+invalid_nonnumeric           540 rows  3 cols | valid=False

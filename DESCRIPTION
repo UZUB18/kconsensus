@@ -1,0 +1,24 @@
+Package: kconsensus
+Title: Transparent Consensus Diagnostics for K-Means Cluster Counts
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: Compares candidate K-means cluster counts using internal indices,
+    reference-simulation gap statistics and optional elbow recommendations.
+    Reports equal-weight method agreement, abstentions, score diagnostics and
+    customizable plots without treating vote agreement as statistical confidence.
+License: MIT + file LICENSE
+Config/roxygen2/version: 8.1.1
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Roxygen: list(markdown = TRUE)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports: 
+    cluster,
+    clusterCrit,
+    ggplot2,
+    graphics,
+    stats,
+    withr

@@ -1,0 +1,28 @@
+test_that("standardized records preserve scores and eligibility", {
+  scores <- data.frame(k = 2:4, score = c(0.3, 0.5, 0.4))
+  record <- method_recommendation(
+    "custom", 3L, "valid", scores = scores, diagnostics = list(score_gap = 0.1)
+  )
+
+  expect_identical(record$preferred_k, 3L)
+  expect_identical(record$eligible, TRUE)
+  expect_identical(record$scores, scores)
+  expect_identical(record$diagnostics$score_gap, 0.1)
+  abstained <- method_recommendation("custom", NA, "ambiguous", "Exact tie.", scores)
+  expect_identical(abstained$preferred_k, NA_integer_)
+  expect_identical(abstained$eligible, FALSE)
+})
+
+test_that("inconsistent records fail rather than silently changing votes", {
+  scores <- data.frame(k = 2:4)
+  expect_snapshot(error = TRUE, method_recommendation("", reason = "No result."))
+  expect_snapshot(error = TRUE, method_recommendation("m", status = "unknown"))
+  expect_snapshot(error = TRUE, method_recommendation("m"))
+  expect_snapshot(error = TRUE, method_recommendation("m", status = "valid", scores = scores))
+  expect_snapshot(error = TRUE, method_recommendation("m", 5L, "valid", scores = scores))
+  expect_snapshot(error = TRUE, method_recommendation("m", 3L, "ambiguous", "Tie.", scores))
+  expect_snapshot(error = TRUE, method_recommendation("m", NA, "undefined", "Failed.", scores, eligible = TRUE))
+  expect_snapshot(error = TRUE, method_recommendation("m", 3L, "valid", scores = scores, eligible = FALSE))
+  expect_snapshot(error = TRUE, method_recommendation("m", reason = "Failed.", scores = data.frame(k = c(2, 2))))
+  expect_snapshot(error = TRUE, method_recommendation("m", 2.5, "valid", scores = scores))
+})

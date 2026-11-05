@@ -1,0 +1,115 @@
+"method","preferred_k","status","eligible","included","reason","tested_min","tested_max","ari_inliers","ari_all_rows","scenario","k_max"
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.923931166581041,0.864749872130679,"cluster_stress_test",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.923931166581041,0.864749872130679,"cluster_stress_test",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.923931166581041,0.864749872130679,"cluster_stress_test",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.923931166581041,0.864749872130679,"cluster_stress_test",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.923931166581041,0.864749872130679,"cluster_stress_test",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"cluster_stress_test",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_3",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"clear_3",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,1,1,"clear_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"clear_3",10
+"silhouette",5,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_5",10
+"calinski_harabasz",5,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_5",10
+"davies_bouldin",5,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"clear_5",10
+"dunn",5,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"clear_5",10
+"gap",5,"valid",TRUE,TRUE,"firstSEmax",1,10,1,1,"clear_5",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"clear_5",10
+"silhouette",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.20998678028475,0.20998678028475,"overlap_3",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.285818496582331,0.285818496582331,"overlap_3",10
+"davies_bouldin",10,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.111127243770396,0.111127243770396,"overlap_3",10
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.111127243770396,0.111127243770396,"overlap_3",10
+"gap",1,"valid",TRUE,TRUE,"firstSEmax",1,10,0,0,"overlap_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"overlap_3",10
+"silhouette",4,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"unbalanced_4",10
+"calinski_harabasz",6,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.343769599227593,0.343769599227593,"unbalanced_4",10
+"davies_bouldin",4,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"unbalanced_4",10
+"dunn",4,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"unbalanced_4",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.995262440718116,0.995262440718116,"unbalanced_4",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"unbalanced_4",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.778202653639645,0.778202653639645,"anisotropic_3",10
+"calinski_harabasz",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.369743699929743,0.369743699929743,"anisotropic_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.778202653639645,0.778202653639645,"anisotropic_3",10
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.369743699929743,0.369743699929743,"anisotropic_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.778202653639645,0.778202653639645,"anisotropic_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"anisotropic_3",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.941231386076981,0.941231386076981,"variable_density_3",10
+"calinski_harabasz",5,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.809466672641146,0.809466672641146,"variable_density_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.941231386076981,0.941231386076981,"variable_density_3",10
+"dunn",7,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.778514482801315,0.778514482801315,"variable_density_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.941231386076981,0.941231386076981,"variable_density_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"variable_density_3",10
+"silhouette",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.238340581606683,0.238340581606683,"concentric_rings_2",10
+"calinski_harabasz",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.238340581606683,0.238340581606683,"concentric_rings_2",10
+"davies_bouldin",10,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.238340581606683,0.238340581606683,"concentric_rings_2",10
+"dunn",5,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.624371226627702,0.624371226627702,"concentric_rings_2",10
+"gap",1,"valid",TRUE,TRUE,"firstSEmax",1,10,0,0,"concentric_rings_2",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"concentric_rings_2",10
+"silhouette",8,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.247005939286868,0.247005939286868,"two_moons_2",10
+"calinski_harabasz",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.198217380031191,0.198217380031191,"two_moons_2",10
+"davies_bouldin",8,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.247005939286868,0.247005939286868,"two_moons_2",10
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.198217380031191,0.198217380031191,"two_moons_2",10
+"gap",10,"valid",TRUE,TRUE,"firstSEmax",1,10,0.198217380031191,0.198217380031191,"two_moons_2",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"two_moons_2",10
+"silhouette",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.530248346631811,0.530248346631811,"high_dim_noise_3",10
+"calinski_harabasz",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.530248346631811,0.530248346631811,"high_dim_noise_3",10
+"davies_bouldin",2,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.530248346631811,0.530248346631811,"high_dim_noise_3",10
+"dunn",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.530248346631811,0.530248346631811,"high_dim_noise_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.983379773555101,0.983379773555101,"high_dim_noise_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"high_dim_noise_3",10
+"silhouette",4,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"uniform_no_clusters",10
+"calinski_harabasz",9,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"uniform_no_clusters",10
+"davies_bouldin",6,"valid",TRUE,TRUE,"Unique minimum score.",2,10,NA,NA,"uniform_no_clusters",10
+"dunn",6,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"uniform_no_clusters",10
+"gap",1,"valid",TRUE,TRUE,"firstSEmax",1,10,NA,NA,"uniform_no_clusters",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"uniform_no_clusters",10
+"silhouette",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"single_gaussian",10
+"calinski_harabasz",2,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"single_gaussian",10
+"davies_bouldin",6,"valid",TRUE,TRUE,"Unique minimum score.",2,10,NA,NA,"single_gaussian",10
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,NA,NA,"single_gaussian",10
+"gap",1,"valid",TRUE,TRUE,"firstSEmax",1,10,NA,NA,"single_gaussian",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"single_gaussian",10
+"silhouette",7,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,0.937391190896225,"outliers_3",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,0.880296911611021,"outliers_3",10
+"davies_bouldin",4,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,0.891197648134646,"outliers_3",10
+"dunn",NA,"ambiguous",FALSE,FALSE,"Exact best-score tie at K = 7, 8",2,10,NA,NA,"outliers_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,1,0.880296911611021,"outliers_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"outliers_3",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"duplicate_points_3",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"duplicate_points_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"duplicate_points_3",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"duplicate_points_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,1,1,"duplicate_points_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"duplicate_points_3",10
+"silhouette",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.840205128205128,0.840205128205128,"many_12",10
+"calinski_harabasz",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.840205128205128,0.840205128205128,"many_12",10
+"davies_bouldin",10,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.840205128205128,0.840205128205128,"many_12",10
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.840205128205128,0.840205128205128,"many_12",10
+"gap",10,"valid",TRUE,TRUE,"firstSEmax",1,10,0.840205128205128,0.840205128205128,"many_12",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"many_12",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.902870115128912,0.902870115128912,"close_split_4",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.902870115128912,0.902870115128912,"close_split_4",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,0.902870115128912,0.902870115128912,"close_split_4",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.902870115128912,0.902870115128912,"close_split_4",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,0.902870115128912,0.902870115128912,"close_split_4",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"close_split_4",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"constant_feature_3",10
+"calinski_harabasz",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"constant_feature_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"constant_feature_3",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"constant_feature_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,1,1,"constant_feature_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"constant_feature_3",10
+"silhouette",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"tiny_3",10
+"calinski_harabasz",10,"valid",TRUE,TRUE,"Unique maximum score.",2,10,0.339222614840989,0.339222614840989,"tiny_3",10
+"davies_bouldin",3,"valid",TRUE,TRUE,"Unique minimum score.",2,10,1,1,"tiny_3",10
+"dunn",3,"valid",TRUE,TRUE,"Unique maximum score.",2,10,1,1,"tiny_3",10
+"gap",3,"valid",TRUE,TRUE,"firstSEmax",1,10,1,1,"tiny_3",10
+"elbow",NA,"ambiguous",FALSE,FALSE,"Automatic selection disabled: no min_strength supplied.",2,10,NA,NA,"tiny_3",10
+"silhouette",13,"valid",TRUE,TRUE,"Unique maximum score.",2,15,0.978990935187816,0.978990935187816,"many_12",15
+"calinski_harabasz",13,"valid",TRUE,TRUE,"Unique maximum score.",2,15,0.978990935187816,0.978990935187816,"many_12",15
+"davies_bouldin",10,"valid",TRUE,TRUE,"Unique minimum score.",2,15,0.840205128205128,0.840205128205128,"many_12",15
+"dunn",10,"valid",TRUE,TRUE,"Unique maximum score.",2,15,0.840205128205128,0.840205128205128,"many_12",15
+"gap",11,"valid",TRUE,TRUE,"firstSEmax",1,15,0.818115108153633,0.818115108153633,"many_12",15
+"elbow",NA,"ambiguous",FALSE,FALSE,"WCSS increases with K; inspect the fitted solutions.",2,15,NA,NA,"many_12",15
