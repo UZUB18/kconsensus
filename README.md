@@ -1,25 +1,157 @@
-
 # kconsensus
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of kconsensus is to ...
+kconsensus helps you choose the number of clusters, K, before running
+K-means. It runs six common selection methods on the same K-means fits,
+counts their votes, and tells you how strong that agreement is. When the honest
+answer is "inconclusive", it says so.
+
+Most tools return one number even when the methods disagree. kconsensus keeps
+every method's scores, reports which methods did not vote and why, and grades
+the vote as unanimous, majority, plurality, tie or no valid votes.
 
 ## Installation
 
-You can install the development version of kconsensus like so:
+kconsensus is not on CRAN yet. Install the development version from a local
+copy of the source:
 
 ``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+# install.packages("devtools")
+devtools::install("path/to/kconsensus", build_vignettes = TRUE)
 ```
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
 ``` r
 library(kconsensus)
-## basic example code
+
+result <- kconsensus(scale(iris[, 1:4]), k = 2:10)
+result
+#> <kconsensus result>
+#> Recommended K: 2  (unanimous: 5 of 5 valid votes, 100%)
+#> Votes: K = 2 (5)
+#> Use summary() for reasons and flags, and plot() for diagnostics.
 ```
 
+`summary()` explains the vote:
+
+``` r
+summary(result)
+#> kconsensus: number of clusters for K-means
+#> --------------------------------------------
+#> Recommended K: 2
+#> Support:       Unanimous (5 of 5 valid votes, 100%)
+#> Valid votes:   5 of 6 methods
+#> Candidate K:   2:10
+#> Seed:          6749
+#> Gap B:         100
+#>
+#> Votes
+#>   K = 2  5 votes  100%
+#>
+#> Methods
+#>   Method             Vote  Runner-up  Margin
+#>   Silhouette         2     3          0.122
+#>   Calinski-Harabasz  2     3          9.44
+#>   Davies-Bouldin     2     3          0.24
+#>   Dunn               2     9          0.149
+#>   Gap Statistic      2     -          -
+#>   WCSS Elbow         -     -          -
+#>   Margin: raw score difference between the best and runner-up K, comparable
+#>   only within one method.
+#>
+#> Not voting
+#>   WCSS Elbow [ambiguous]: Automatic selection disabled: no min_strength
+#>     supplied.
+#>
+#> All valid methods agree on K = 2.
+#>
+#> Note: vote percentages describe agreement between methods, not statistical
+#> confidence.
+#> Data were used as supplied; kconsensus did not standardize them.
+```
+
+``` r
+plot(result, type = "indices")
+```
+
+![Index curves for scaled iris data: all five voting methods prefer K = 2.](man/figures/README-indices.png)
+
+All methods choose K = 2, although iris contains three species. Setosa
+separates cleanly, while versicolor and virginica overlap. Agreement between
+methods does not prove that K is the true number of groups.
+
+When the methods disagree, the output says so. On uniform noise, with no
+clusters at all:
+
+``` r
+set.seed(1)
+noise <- cbind(runif(300, -5, 5), runif(300, -5, 5))
+kconsensus(noise, k = 2:8)
+#> <kconsensus result>
+#> Recommended K: 8  (plurality, no majority: 2 of 5 valid votes, 40%)
+#> Votes: K = 1 (1), K = 3 (1), K = 7 (1), K = 8 (2)
+#> Flags: upper_boundary, single_cluster_vote
+#> Use summary() for reasons and flags, and plot() for diagnostics.
+#> Warning message:
+#> Consensus winner K = 8 is the highest tested K; larger values were not evaluated.
+```
+
+## Methods
+
+| Method | Chooses | Implementation |
+|---|---|---|
+| Silhouette | Highest average silhouette width | `cluster::silhouette()` |
+| Calinski-Harabasz | Highest index | `clusterCrit::intCriteria()` |
+| Davies-Bouldin | Lowest index | `clusterCrit::intCriteria()` |
+| Dunn | Highest index | `clusterCrit::intCriteria()` |
+| Gap statistic | `firstSEmax` rule; can choose K = 1 | `cluster::clusGap()` |
+| WCSS elbow | Strongest knee; abstains unless you set `elbow_min_strength` | kconsensus |
+
+A method abstains, and leaves the vote denominator, when its best score is an
+exact tie, when a score is undefined, or when its calculation fails. The reason
+is always reported.
+
+## Reading the result
+
+| `status` | Meaning |
+|---|---|
+| `unanimous` | Every valid method chose the same K. |
+| `majority` | The leading K has more than half of the valid votes. |
+| `plurality` | The leading K has the most votes but no majority: a weak preference. |
+| `tie` | Several K share the most votes; `recommended_k` is `NA`. |
+| `no_valid_votes` | No method produced a valid vote. |
+
+Flags add context without changing any vote: `upper_boundary` (the winner is
+the largest K tested), `lower_boundary` (the winner is the smallest K its voting
+methods could evaluate) and `single_cluster_vote` (Gap, or another method, chose
+K = 1 while the others chose subdivisions).
+
+Use `as.data.frame(result)` for the per-method table, and
+`as.data.frame(result, what = "scores")` for every score at every K. All plots
+(`type = "consensus"`, `"indices"` or `"matrix"`) are ordinary ggplot2
+objects.
+
+## Good to know
+
+* Data are used exactly as supplied. Pass `scale(x)` yourself when variables
+  are on different scales.
+* Only K-means is supported, so compact, roughly spherical groups are assumed.
+* Vote percentages describe agreement between related methods, not the
+  probability that a K is correct.
+* Silhouette and Dunn need all pairwise distances, so memory grows with the
+  square of the number of rows. Gap's reference simulations (`B = 100` by
+  default) dominate the runtime.
+
+## Learn more
+
+* `vignette("choosing-k", package = "kconsensus")` walks through one dataset
+  where the methods agree and one where they do not, and what to conclude.
+* [PROJECT_SHOWCASE.md](PROJECT_SHOWCASE.md) documents the implementation and
+  the validation studies in [validation/](validation/).
+
+## License
+
+MIT

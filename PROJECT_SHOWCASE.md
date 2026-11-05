@@ -22,7 +22,7 @@ and a separate Gap seed-stability study.
 
 | Evidence layer | Completed work | What it establishes |
 |---|---|---|
-| Unit tests | 497 assertions passed, without warnings | The tested implementation contracts hold |
+| Unit tests | 563 assertions passed, without warnings | The tested implementation contracts hold |
 | Separate-session package check | 0 errors, 0 warnings, 0 notes | The package passes the recorded development check |
 | Repeated-data study | 600 generated datasets; 700 consensus evaluations | Behavior under six specified designs and a paired K-range comparison |
 | Supplied benchmark | 19 valid runs and five expected-error cases | Reference agreement, input rejection and behavior on the supplied fixtures |
@@ -617,12 +617,12 @@ for (type in names(sizes)) {
 | Large datasets | Pairwise-distance memory and simulation runtime remain important limits; optional distance-based scoring is not implemented. |
 | Calculation failures | Failed fits, undefined indices and Gap failures now become reasoned abstentions with a warning. A method still abstains entirely if any tested K is undefined for it; scoring the remaining K is not implemented. |
 | Release metadata | Author name/email are still placeholders. Publication metadata must be completed without inventing identities or URLs. |
-| Website and project introduction | The original README remains unchanged. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
+| Website and project introduction | The README and the `choosing-k` vignette now introduce the package. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
 | Automated formatting | `air` was unavailable. Passing R checks does not mean an automatic formatter ran. |
 
 No warning rule or arbitrary confidence threshold was added as part of the
 Gap stability investigation. This Markdown showcase also does not change the
-statistical engine or replace the existing README.
+statistical engine.
 
 ## Main conclusion
 
