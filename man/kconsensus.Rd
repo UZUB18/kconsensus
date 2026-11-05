@@ -47,6 +47,14 @@ Fits each candidate once for the four internal indices and WCSS. Gap uses
 separate reference simulations and can recommend one cluster. Variables are
 not standardized: pass \code{scale(x)} explicitly when appropriate.
 }
+\details{
+Invalid arguments stop immediately. A calculation that fails during the
+analysis does not: if K-means fails or does not converge at some K, or an
+index is undefined there, the methods that need that K abstain; if Gap
+fails, Gap abstains. A warning lists the failures, and \code{\link[=summary]{summary()}} shows each
+abstaining method's reason. Failed fits are kept in \code{fits} as the error
+condition.
+}
 \examples{
 result <- kconsensus(scale(iris[, 1:4]), k = 2:5, B = 2)
 summary(result)

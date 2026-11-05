@@ -1,5 +1,6 @@
 # Exact ties abstain; raw best-versus-runner-up differences stay within a method.
-recommend_index <- function(method, k, values, direction) {
+# `notes` explain undefined K (e.g. failed fits) in the abstention reason.
+recommend_index <- function(method, k, values, direction, notes = character()) {
   if (
     !is.numeric(values) || is.complex(values) || !is.null(dim(values)) ||
       length(values) != length(k) || length(k) == 0L ||
@@ -13,9 +14,14 @@ recommend_index <- function(method, k, values, direction) {
     return(method_recommendation(
       method,
       status = "undefined",
-      reason = paste("Non-finite scores at K =",
-        paste(k[!is.finite(values)], collapse = ", ")
-      ),
+      reason = paste(c(
+        paste0(
+          "Non-finite scores at K = ",
+          paste(k[!is.finite(values)], collapse = ", "),
+          "."
+        ),
+        notes
+      ), collapse = " "),
       scores = scores,
       diagnostics = list(selection_rule = direction)
     ))
@@ -62,8 +68,18 @@ recommend_methods <- function(indices, gap = NULL, elbow = NULL) {
       call. = FALSE
     )
   }
+  problems <- attr(indices, "problems")
   records <- lapply(names(directions), function(method) {
-    recommend_index(method, indices$k, indices[[method]], directions[[method]])
+    undefined_k <- indices$k[!is.finite(indices[[method]])]
+    notes <- if (is.data.frame(problems)) {
+      relevant <- problems[problems$k %in% undefined_k, , drop = FALSE]
+      sprintf("K = %s: %s", relevant$k, relevant$message)
+    } else {
+      character()
+    }
+    recommend_index(
+      method, indices$k, indices[[method]], directions[[method]], notes = notes
+    )
   })
 
   if (is.null(gap) || inherits(gap, "error")) {

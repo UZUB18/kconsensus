@@ -19,16 +19,7 @@ compute_elbow <- function(k, wcss, min_strength = NULL) {
       call. = FALSE
     )
   }
-  if (!is.null(min_strength) && (
-    !is.numeric(min_strength) || is.complex(min_strength) ||
-      length(min_strength) != 1L || !is.null(dim(min_strength)) ||
-      is.na(min_strength) || !is.finite(min_strength) ||
-      min_strength < 0 || min_strength > 1
-  )) {
-    stop("`min_strength` must be NULL or a single finite number from 0 to 1.",
-      call. = FALSE
-    )
-  }
+  check_min_strength(min_strength)
 
   ordering <- order(k)
   curve <- data.frame(
@@ -90,6 +81,20 @@ compute_elbow <- function(k, wcss, min_strength = NULL) {
     result$reason <- "Selected using a user-supplied, uncalibrated min_strength."
   }
   result
+}
+
+check_min_strength <- function(min_strength) {
+  if (!is.null(min_strength) && (
+    !is.numeric(min_strength) || is.complex(min_strength) ||
+      length(min_strength) != 1L || !is.null(dim(min_strength)) ||
+      is.na(min_strength) || !is.finite(min_strength) ||
+      min_strength < 0 || min_strength > 1
+  )) {
+    stop("`min_strength` must be NULL or a single finite number from 0 to 1.",
+      call. = FALSE
+    )
+  }
+  invisible(min_strength)
 }
 
 plot_elbow <- function(elbow) {

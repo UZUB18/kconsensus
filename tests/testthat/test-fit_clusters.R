@@ -66,6 +66,27 @@ test_that("no random seed is left behind if the caller had none", {
   )
 })
 
+test_that("a K-means error at one K is kept and the other K still fit", {
+  real_kmeans <- stats::kmeans
+  local_mocked_bindings(
+    kmeans = function(x, centers, ...) {
+      if (centers == 3) stop("empty cluster: try a better set of initial centers")
+      real_kmeans(x, centers, ...)
+    },
+    .package = "stats"
+  )
+  fits <- fit_clusters(iris[, 1:4], 2:4)
+
+  expect_named(fits, c("2", "3", "4"))
+  expect_s3_class(fits[["2"]], "kmeans")
+  expect_s3_class(fits[["3"]], "error")
+  expect_identical(
+    conditionMessage(fits[["3"]]),
+    "empty cluster: try a better set of initial centers"
+  )
+  expect_s3_class(fits[["4"]], "kmeans")
+})
+
 test_that("invalid data and candidate counts are rejected before fitting", {
   expect_snapshot(error = TRUE, fit_clusters(iris, 2))
   expect_snapshot(error = TRUE, fit_clusters(iris[, 1:4], c(2, 2)))

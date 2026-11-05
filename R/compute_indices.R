@@ -1,4 +1,6 @@
 # x and distances are prepared by compute_indices(), without standardization.
+# Degenerate partitions can give non-finite indices; these are returned as is
+# so the affected methods abstain instead of stopping the whole analysis.
 score_partition <- function(x, groups, distances) {
   if (
     !is.numeric(groups) || is.complex(groups) || !is.null(dim(groups)) ||
@@ -29,25 +31,18 @@ score_partition <- function(x, groups, distances) {
   )
   sil <- cluster::silhouette(groups, distances)
 
-  scores <- c(
+  c(
     silhouette = mean(sil[, "sil_width"]),
     calinski_harabasz = as.numeric(indices[["calinski_harabasz"]]),
     davies_bouldin = as.numeric(indices[["davies_bouldin"]]),
     dunn = as.numeric(indices[["dunn"]])
   )
-  if (any(!is.finite(scores))) {
-    stop(
-      paste("Undefined or non-finite indices:",
-        paste(names(scores)[!is.finite(scores)], collapse = ", ")
-      ),
-      call. = FALSE
-    )
-  }
-  scores
 }
 
 # fits must come from the same x, in the same observation order.
 # The shared silhouette distances require quadratic memory; no K is selected.
+# A K whose fit failed or cannot be scored gets NA scores, and the reason is
+# kept in attr(result, "problems") rather than stopping the other candidates.
 compute_indices <- function(x, fits) {
   if (
     !is.list(fits) || is.data.frame(fits) || length(fits) == 0L ||
@@ -73,9 +68,13 @@ compute_indices <- function(x, fits) {
     )
   }
 
+  problems <- data.frame(k = integer(), message = character())
   rows <- lapply(seq_along(fits), function(i) {
     tryCatch({
       fit <- fits[[i]]
+      if (inherits(fit, "error")) {
+        stop(paste("K-means failed:", conditionMessage(fit)), call. = FALSE)
+      }
       if (!inherits(fit, "kmeans")) {
         stop("Expected a successful kmeans fit.", call. = FALSE)
       }
@@ -83,7 +82,11 @@ compute_indices <- function(x, fits) {
         length(fit$ifault) != 1L || !is.numeric(fit$ifault) ||
           is.na(fit$ifault) || fit$ifault != 0
       ) {
-        stop("K-means did not report successful convergence (ifault = 0).",
+        stop(
+          sprintf(
+            "K-means did not converge (ifault = %s).",
+            paste(fit$ifault, collapse = ", ")
+          ),
           call. = FALSE
         )
       }
@@ -111,13 +114,20 @@ compute_indices <- function(x, fits) {
         wcss = wcss
       )
     }, error = function(error) {
-      stop(sprintf("Cannot score K = %s: %s", k[i], conditionMessage(error)),
-        call. = FALSE
+      problems[nrow(problems) + 1L, ] <<- list(as.integer(k[i]), conditionMessage(error))
+      data.frame(
+        k = as.integer(k[i]),
+        silhouette = NA_real_,
+        calinski_harabasz = NA_real_,
+        davies_bouldin = NA_real_,
+        dunn = NA_real_,
+        wcss = NA_real_
       )
     })
   })
 
   result <- do.call(rbind, rows)
   attr(result, "preprocessing") <- input$preprocessing
+  attr(result, "problems") <- problems
   result
 }

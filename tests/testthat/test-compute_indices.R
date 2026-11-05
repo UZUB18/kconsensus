@@ -97,21 +97,54 @@ test_that("invalid fit containers and candidate names are rejected", {
   expect_snapshot(error = TRUE, compute_indices(x, list("2" = NULL, "2" = NULL)))
 })
 
-test_that("failed or malformed fits give K-specific errors", {
+test_that("failed or malformed fits leave only that K undefined", {
   x <- iris[, 1:4]
-  fits <- fit_clusters(x, 2)
-  expect_snapshot(error = TRUE, compute_indices(x, list("2" = NULL)))
-  fits[[1]]$ifault <- 2L
-  expect_snapshot(error = TRUE, compute_indices(x, fits))
-  fits[[1]]$ifault <- 0L
-  fits[[1]]$cluster <- fits[[1]]$cluster[-1]
-  expect_snapshot(error = TRUE, compute_indices(x, fits))
-  fits <- fit_clusters(x, 2)
-  names(fits) <- "3"
-  expect_snapshot(error = TRUE, compute_indices(x, fits))
-  names(fits) <- "2"
-  fits[[1]]$tot.withinss <- Inf
-  expect_snapshot(error = TRUE, compute_indices(x, fits))
+  fits <- fit_clusters(x, 2:3)
+  expect_undefined_k2 <- function(fits, message) {
+    result <- compute_indices(x, fits)
+    expect_identical(result$k, c(2L, 3L))
+    expect_true(all(is.na(unlist(result[1L, -1L]))))
+    expect_true(all(is.finite(unlist(result[2L, -1L]))))
+    expect_identical(attr(result, "problems")$k, 2L)
+    expect_identical(attr(result, "problems")$message, message)
+  }
+
+  broken <- fits
+  broken["2"] <- list(NULL)
+  expect_undefined_k2(broken, "Expected a successful kmeans fit.")
+
+  broken <- fits
+  broken[["2"]] <- simpleError("empty cluster: try a better set of initial centers")
+  expect_undefined_k2(
+    broken,
+    "K-means failed: empty cluster: try a better set of initial centers"
+  )
+
+  broken <- fits
+  broken[["2"]]$ifault <- 4L
+  expect_undefined_k2(broken, "K-means did not converge (ifault = 4).")
+
+  broken <- fits
+  broken[["2"]]$cluster <- broken[["2"]]$cluster[-1]
+  expect_undefined_k2(
+    broken,
+    "Cluster labels must be finite positive integers, one per observation."
+  )
+
+  broken <- fits
+  broken[["2"]]$tot.withinss <- Inf
+  expect_undefined_k2(broken, "The fit must contain a finite, nonnegative tot.withinss.")
+
+  mismatched <- fit_clusters(x, c(2, 4))
+  names(mismatched) <- c("2", "3")
+  result <- compute_indices(x, mismatched)
+  expect_identical(attr(result, "problems")$k, 3L)
+  expect_identical(
+    attr(result, "problems")$message,
+    "The partition's cluster count does not match its candidate K."
+  )
+
+  expect_identical(nrow(attr(compute_indices(x, fits), "problems")), 0L)
 })
 
 test_that("invalid partitions are rejected before native index calculations", {
@@ -126,10 +159,17 @@ test_that("invalid partitions are rejected before native index calculations", {
   }
 })
 
-test_that("degenerate partitions stop instead of returning infinite indices", {
+test_that("degenerate partitions return non-finite indices for the voting layer", {
   x <- matrix(c(0, 0, 1, 1), ncol = 1)
-  fits <- fit_clusters(x, 2)
-  expect_snapshot(error = TRUE, compute_indices(x, fits))
+  result <- compute_indices(x, fit_clusters(x, 2))
+
+  expect_identical(nrow(attr(result, "problems")), 0L)
+  expect_false(is.finite(result$calinski_harabasz))
+  expect_false(is.finite(result$dunn))
+  records <- recommend_methods(result)
+  expect_identical(records$calinski_harabasz$status, "undefined")
+  expect_identical(records$calinski_harabasz$reason, "Non-finite scores at K = 2.")
+  expect_identical(records$silhouette$status, "valid")
 })
 
 test_that("a singleton cluster can still have defined indices", {

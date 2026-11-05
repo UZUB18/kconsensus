@@ -1,5 +1,6 @@
 # Return one named kmeans fit per K for reuse across internal indices.
 # Each K has its own seed, independent of candidate order or caller RNG state.
+# A K-means error at one K is stored as its condition so other K still run.
 fit_clusters <- function(x, k, seed = 6749L) {
   input <- validate_input(x, k)
 
@@ -16,14 +17,17 @@ fit_clusters <- function(x, k, seed = 6749L) {
   }
 
   fits <- lapply(input$k, function(kk) {
-    withr::with_seed(
-      seed + kk,
-      stats::kmeans(
-        input$data,
-        centers = kk,
-        nstart = 25,
-        iter.max = 100
-      )
+    tryCatch(
+      withr::with_seed(
+        seed + kk,
+        stats::kmeans(
+          input$data,
+          centers = kk,
+          nstart = 25,
+          iter.max = 100
+        )
+      ),
+      error = function(error) error
     )
   })
 

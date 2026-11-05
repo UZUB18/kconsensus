@@ -174,9 +174,11 @@ no claim about population cluster structure follows from that status.
 | A method votes for K = 1 while others vote for K >= 2 | Add a descriptive `single_cluster_vote` flag; the vote itself is unchanged |
 | Method disagreement | Preserve each supplied score curve and diagnostics |
 
-The public calculation pipeline remains fail-fast for calculation errors.
-Although adapters can represent unavailable methods, the public wrapper does
-not automatically turn every failed calculation into a partial consensus.
+Invalid arguments and data still stop `kconsensus()` before any fitting.
+Failures during the calculation do not: a failed or non-converged K-means fit
+leaves that K undefined, so the methods that need it abstain; non-finite index
+values make only that index abstain; and a Gap failure makes Gap abstain. A
+warning lists the failures, and each abstention keeps its reason.
 
 ### Worked voting example
 
@@ -613,7 +615,7 @@ for (type in names(sizes)) {
 | Elbow cutoff | No validated default. Automatic elbow selection abstains unless the caller supplies an uncalibrated threshold. |
 | Model shape | General K-means caveat is displayed. No automatic geometry detector or non-spherical clustering alternative was implemented. |
 | Large datasets | Pairwise-distance memory and simulation runtime remain important limits; optional distance-based scoring is not implemented. |
-| Calculation failures | Public calculations remain fail-fast; general partial-result recovery is not implemented. |
+| Calculation failures | Failed fits, undefined indices and Gap failures now become reasoned abstentions with a warning. A method still abstains entirely if any tested K is undefined for it; scoring the remaining K is not implemented. |
 | Release metadata | Author name/email are still placeholders. Publication metadata must be completed without inventing identities or URLs. |
 | Website and project introduction | The original README remains unchanged. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
 | Automated formatting | `air` was unavailable. Passing R checks does not mean an automatic formatter ran. |

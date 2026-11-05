@@ -98,3 +98,23 @@ test_that("absent and failed optional methods are explicitly excluded", {
   expect_identical(failed$gap$reason, "Reference simulation failed.")
   expect_identical(compute_consensus(failed)$n_valid_methods, 4L)
 })
+
+test_that("abstention reasons explain undefined K from failed fits", {
+  indices <- data.frame(
+    k = 2:4, silhouette = c(0.3, NA, 0.4),
+    calinski_harabasz = c(10, NA, 20), davies_bouldin = c(0.8, NA, 0.6),
+    dunn = c(0.1, NA, 0.2), wcss = c(10, NA, 5)
+  )
+  attr(indices, "problems") <- data.frame(
+    k = 3L, message = "K-means did not converge (ifault = 4)."
+  )
+  records <- recommend_methods(indices)
+
+  for (method in c("silhouette", "calinski_harabasz", "davies_bouldin", "dunn")) {
+    expect_identical(records[[method]]$status, "undefined")
+    expect_identical(
+      records[[method]]$reason,
+      "Non-finite scores at K = 3. K = 3: K-means did not converge (ifault = 4)."
+    )
+  }
+})

@@ -5,15 +5,7 @@ compute_gap <- function(x, k_max = 10L, B = 100L, seed = 6749L) {
     stop("`k_max` must be a single candidate cluster count.", call. = FALSE)
   }
   input <- validate_input(x, k_max)
-  if (
-    !is.numeric(B) || is.complex(B) || length(B) != 1L ||
-      !is.null(dim(B)) || is.na(B) || !is.finite(B) ||
-      B != floor(B) || B < 2 || B > .Machine$integer.max
-  ) {
-    stop("`B` must be a whole number from 2 to .Machine$integer.max.",
-      call. = FALSE
-    )
-  }
+  check_simulation_count(B)
   if (
     !is.numeric(seed) || is.complex(seed) || length(seed) != 1L ||
       !is.null(dim(seed)) || is.na(seed) || !is.finite(seed) ||
@@ -63,4 +55,17 @@ compute_gap <- function(x, k_max = 10L, B = 100L, seed = 6749L) {
     d_power = 1L,
     preprocessing = input$preprocessing
   )
+}
+
+check_simulation_count <- function(B) {
+  if (
+    !is.numeric(B) || is.complex(B) || length(B) != 1L ||
+      !is.null(dim(B)) || is.na(B) || !is.finite(B) ||
+      B != floor(B) || B < 2 || B > .Machine$integer.max
+  ) {
+    stop("`B` must be a whole number from 2 to .Machine$integer.max.",
+      call. = FALSE
+    )
+  }
+  invisible(B)
 }
