@@ -191,3 +191,14 @@ test_that("malformed and duplicated records cannot manufacture votes", {
   record$preferred_k <- 100L
   expect_snapshot(error = TRUE, compute_consensus(list(record)))
 })
+
+test_that("one valid vote is reported as a single vote, not as agreement", {
+  result <- compute_consensus(list(
+    test_vote("gap", 2L, tested_k = 1:6),
+    test_vote("silhouette", NA_integer_, "undefined", "Calculation failed.")
+  ))
+
+  expect_identical(result$status, "single_vote")
+  expect_identical(result$recommended_k, 2L)
+  expect_identical(result$n_valid_methods, 1L)
+})

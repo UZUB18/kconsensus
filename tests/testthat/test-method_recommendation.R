@@ -25,4 +25,6 @@ test_that("inconsistent records fail rather than silently changing votes", {
   expect_snapshot(error = TRUE, method_recommendation("m", 3L, "valid", scores = scores, eligible = FALSE))
   expect_snapshot(error = TRUE, method_recommendation("m", reason = "Failed.", scores = data.frame(k = c(2, 2))))
   expect_snapshot(error = TRUE, method_recommendation("m", 2.5, "valid", scores = scores))
+  expect_snapshot(error = TRUE, method_recommendation("m", reason = "Failed.", eligible = NA))
+  expect_snapshot(error = TRUE, method_recommendation("m", reason = "Failed.", diagnostics = "none"))
 })

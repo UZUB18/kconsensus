@@ -97,6 +97,43 @@ test_that("unanimous and majority summaries use the matching wording", {
   expect_identical(summary(majority)$runner_up_k, 4L)
 })
 
+test_that("a single valid vote is described as one method's choice", {
+  result <- compute_consensus(list(
+    simple_vote("gap", 3L, tested_k = 1:6),
+    method_recommendation(
+      "silhouette", reason = "Calculation failed.", scores = data.frame(k = 2:6)
+    )
+  ))
+
+  expect_identical(result$status, "single_vote")
+  expect_output(
+    print(result),
+    "Recommended K: 3  (single vote: only Gap Statistic voted)",
+    fixed = TRUE
+  )
+  s <- summary(result)
+  expect_identical(s$support, "Single vote (only Gap Statistic voted)")
+  expect_match(
+    s$verdict,
+    "Only Gap Statistic cast a valid vote, so there is no agreement between methods to assess",
+    fixed = TRUE
+  )
+  expect_match(s$verdict, "See the reasons above", fixed = TRUE)
+  p <- plot(result, type = "consensus")
+  expect_match(p$labels$subtitle, "Single vote: K = 3 (only Gap Statistic voted)", fixed = TRUE)
+  expect_true("Only valid vote" %in% as.character(p$data$role))
+  expect_no_warning(ggplot2::ggplot_build(p))
+})
+
+test_that("summary settings show starts and Gap B only when Gap ran", {
+  result <- plurality_fixture()
+  result$settings$nstart <- 10L
+  result$settings$methods <- c("silhouette", "dunn")
+  output <- capture.output(print(summary(result)))
+  expect_true(any(grepl("K-means starts: 10", output, fixed = TRUE)))
+  expect_false(any(grepl("Gap B", output, fixed = TRUE)))
+})
+
 test_that("as.data.frame returns the methods, agreement and scores tables", {
   result <- plurality_fixture()
 
@@ -146,6 +183,39 @@ test_that("excluded methods keep their preference but do not count as votes", {
   expect_false(any(b_rows$vote_counted))
   expect_output(print(summary(result)), "4 (excluded)", fixed = TRUE)
   expect_output(print(summary(result)), "b [excluded]: Excluded by user policy.", fixed = TRUE)
+})
+
+test_that("the scores table skips methods without scores", {
+  result <- compute_consensus(list(
+    simple_vote("a", 3L),
+    method_recommendation("gap", reason = "Gap failed.")
+  ))
+  expect_identical(unique(as.data.frame(result, what = "scores")$method), "a")
+
+  empty <- as.data.frame(
+    compute_consensus(list(method_recommendation("gap", reason = "Gap failed."))),
+    what = "scores"
+  )
+  expect_identical(nrow(empty), 0L)
+  expect_named(empty, c("method", "k", "criterion", "value", "se", "preferred", "vote_counted"))
+
+  no_numeric <- compute_consensus(list(method_recommendation(
+    "custom", reason = "No numeric criterion.",
+    scores = data.frame(k = 2:4, label = c("a", "b", "c"))
+  )))
+  no_numeric_scores <- as.data.frame(no_numeric, what = "scores")
+  expect_true(all(is.na(no_numeric_scores$value)))
+  expect_true(all(is.na(no_numeric_scores$criterion)))
+})
+
+test_that("results saved by older versions still print, summarize and plot", {
+  legacy <- plurality_fixture()
+  legacy$status <- "unique_winner"
+  legacy$flags <- NULL
+
+  expect_output(print(legacy), "Recommended K: 4  (selected: 2 of 5 valid votes, 40%)", fixed = TRUE)
+  expect_identical(nrow(summary(legacy)$flags), 0L)
+  expect_match(plot(legacy)$labels$subtitle, "Selected: K = 4", fixed = TRUE)
 })
 
 test_that("the result methods reject malformed objects", {

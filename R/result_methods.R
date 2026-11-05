@@ -9,6 +9,8 @@
 #' * `"majority"`: the leading K has more than half of the valid votes.
 #' * `"plurality"`: the leading K has the most votes but no majority, so it is
 #'   a weak preference.
+#' * `"single_vote"`: only one method cast a valid vote, so there is no
+#'   agreement to assess.
 #' * `"tie"`: several K share the most votes and no K is recommended.
 #' * `"no_valid_votes"`: no method cast a valid vote.
 #'
@@ -83,7 +85,7 @@ print.summary.kconsensus_result <- function(x, ...) {
     writeLines(strwrap(text, width = width, initial = initial, prefix = prefix))
   }
   field <- function(name, value) {
-    cat(sprintf("%-15s%s\n", paste0(name, ":"), value))
+    cat(sprintf("%-16s%s\n", paste0(name, ":"), value))
   }
 
   cat("kconsensus: number of clusters for K-means\n")
@@ -104,7 +106,12 @@ print.summary.kconsensus_result <- function(x, ...) {
   if (!is.null(x$settings)) {
     field("Candidate K", format_k_values(x$settings$k))
     field("Seed", x$settings$seed)
-    field("Gap B", x$settings$B)
+    if (!is.null(x$settings$nstart)) {
+      field("K-means starts", x$settings$nstart)
+    }
+    if (is.null(x$settings$methods) || "gap" %in% x$settings$methods) {
+      field("Gap B", x$settings$B)
+    }
   }
 
   cat("\nVotes\n")
@@ -363,11 +370,16 @@ support_label <- function(status) {
     unanimous = "Unanimous",
     majority = "Majority",
     plurality = "Plurality, no majority",
+    single_vote = "Single vote",
     "Selected"
   )
 }
 
 winner_share <- function(x) {
+  if (x$n_valid_methods == 1L) {
+    voter <- x$methods$method[x$methods$included]
+    return(sprintf("only %s voted", friendly_method_name(voter)))
+  }
   votes <- x$agreement$votes[match(x$recommended_k, x$agreement$k)]
   sprintf(
     "%d of %d valid votes, %s",
@@ -417,6 +429,17 @@ verdict_text <- function(x) {
         "disagree. Inspect %s before choosing K."
       ),
       x$recommended_k, indices_hint
+    ),
+    single_vote = paste0(
+      sprintf(
+        paste(
+          "Only %s cast a valid vote, so there is no agreement between methods",
+          "to assess: K = %d is that one method's choice."
+        ),
+        friendly_method_name(x$methods$method[x$methods$included]),
+        x$recommended_k
+      ),
+      if (nrow(x$methods) > 1L) " See the reasons above for the methods that did not vote." else ""
     ),
     tie = sprintf(
       "Inconclusive: K = %s are tied, so no single K is recommended. Inspect %s.",

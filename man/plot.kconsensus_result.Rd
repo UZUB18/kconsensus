@@ -25,6 +25,6 @@ Visualizes candidate cluster counts from a \code{kconsensus_result} object as
 a consensus vote bar chart (\code{type = "consensus"}), per-method raw diagnostic
 curves (\code{type = "indices"}), or a method-by-K evaluation matrix
 (\code{type = "matrix"}). All views use a single accent color (\verb{#0072B2}) for
-eligible selected or tied leading candidates and neutral greys for other
+eligible selected or tied leading candidates and neutral grays for other
 marks.
 }

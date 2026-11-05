@@ -131,6 +131,7 @@ candidate range in `k` and with a different `seed`, or resample the data with
 | `unanimous` | Every valid method chose the same K. |
 | `majority` | The leading K has more than half of the valid votes. |
 | `plurality` | The leading K has the most votes but no majority. Treat it as a weak preference. |
+| `single_vote` | Only one method voted, so there is no agreement to assess. |
 | `tie` | Several K share the most votes. No K is recommended (`recommended_k` is `NA`). |
 | `no_valid_votes` | No method produced a valid vote. |
 
@@ -146,6 +147,27 @@ The flags never change a vote:
   it evaluated, so none of them could have chosen fewer clusters.
 * `single_cluster_vote`: a method, usually Gap, voted for K = 1 while others
   voted for subdivisions.
+
+## Large datasets
+
+The gap statistic is usually by far the slowest step: it runs roughly
+`B * max(k) * nstart` K-means fits on simulated data. Silhouette needs all
+pairwise distances, so its memory grows with the square of the number of rows,
+and Dunn's computing time grows the same way. For a first look at a large
+dataset, choose the methods that run, or lower `B` and `nstart`:
+
+```{r quick}
+quick <- kconsensus(
+  blobs,
+  k = 2:8,
+  methods = c("calinski_harabasz", "davies_bouldin", "elbow")
+)
+quick
+```
+
+In interactive sessions kconsensus reports its progress, including one dot per
+Gap reference dataset. Set `verbose = FALSE`, or
+`options(kconsensus.verbose = FALSE)`, to silence it.
 
 ## Getting the numbers out
 
@@ -169,6 +191,6 @@ can restyle them or save them with `ggplot2::ggsave()`.
 * Vote percentages describe agreement between methods, not the probability that
   a K is correct. The methods are also related to each other, so their votes are
   not independent pieces of evidence.
-* Silhouette and Dunn need all pairwise distances, so memory grows with the
-  square of the number of rows. Gap reruns K-means on `B` simulated datasets
-  for every K, which dominates the runtime.
+* It does not test whether clusters exist at all. Gap is the only method that
+  can choose K = 1, and a vote for subdivisions from the other methods is not
+  evidence against it.

@@ -1,21 +1,25 @@
 Package: kconsensus
 Title: Transparent Consensus Diagnostics for K-Means Cluster Counts
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: Compares candidate K-means cluster counts using internal indices,
-    reference-simulation gap statistics and optional elbow recommendations.
-    Reports equal-weight method agreement, abstentions, score diagnostics and
-    customizable plots without treating vote agreement as statistical confidence.
+    person("UZUB18", email = "uzub18@users.noreply.github.com", role = c("aut", "cre"))
+Description: Compares candidate K-means cluster counts using the silhouette,
+    Calinski-Harabasz, Davies-Bouldin and Dunn indices, the gap statistic and
+    an optional elbow rule. Grades the support for the leading count as
+    unanimous, majority, plurality, single vote or tie, flags votes at the edge
+    of the tested range, records why methods abstain, and provides customizable
+    plots, without treating vote agreement as statistical confidence.
 License: MIT + file LICENSE
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
+Language: en-US
 Depends: R (>= 4.1.0)
 Roxygen: list(markdown = TRUE)
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tibble
 Config/testthat/edition: 3
 Imports: 
     cluster,

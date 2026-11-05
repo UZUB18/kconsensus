@@ -78,3 +78,19 @@
       Error:
       ! `preferred_k` must be NA or a single positive whole number.
 
+---
+
+    Code
+      method_recommendation("m", reason = "Failed.", eligible = NA)
+    Condition
+      Error:
+      ! `eligible` must be a single TRUE or FALSE.
+
+---
+
+    Code
+      method_recommendation("m", reason = "Failed.", diagnostics = "none")
+    Condition
+      Error:
+      ! `diagnostics` must be a list.
+

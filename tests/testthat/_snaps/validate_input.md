@@ -140,7 +140,7 @@
       validate_input(x, 2)
     Condition
       Error:
-      ! `x` must not contain missing values (NA or NaN).
+      ! `x` must not contain missing values (NA or NaN). NaN often comes from scale() applied to a constant column; remove constant columns before scaling.
 
 ---
 
@@ -148,7 +148,7 @@
       validate_input(as.data.frame(x), 2)
     Condition
       Error:
-      ! `x` must not contain missing values (NA or NaN).
+      ! `x` must not contain missing values (NA or NaN). NaN often comes from scale() applied to a constant column; remove constant columns before scaling.
 
 ---
 

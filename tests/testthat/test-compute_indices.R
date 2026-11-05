@@ -62,6 +62,33 @@ test_that("distances are calculated once across candidates", {
   expect_identical(calls, 1L)
 })
 
+test_that("only the requested indices are scored, with distances only for silhouette", {
+  x <- iris[, 1:4]
+  fits <- fit_clusters(x, 2:4)
+  full <- compute_indices(x, fits)
+  calls <- 0L
+  original_dist <- stats::dist
+  local_mocked_bindings(
+    dist = function(...) {
+      calls <<- calls + 1L
+      original_dist(...)
+    },
+    .package = "stats"
+  )
+
+  subset <- compute_indices(x, fits, indices = c("dunn", "calinski_harabasz"))
+  expect_named(subset, c("k", "calinski_harabasz", "dunn", "wcss"))
+  expect_identical(calls, 0L)
+  expect_equal(subset$calinski_harabasz, full$calinski_harabasz)
+  expect_equal(subset$dunn, full$dunn)
+  expect_identical(subset$wcss, full$wcss)
+
+  expect_named(compute_indices(x, fits, indices = character()), c("k", "wcss"))
+  expect_named(compute_indices(x, fits, indices = "silhouette"), c("k", "silhouette", "wcss"))
+  expect_identical(calls, 1L)
+  expect_snapshot(error = TRUE, compute_indices(x, fits, indices = "gap"))
+})
+
 test_that("integer data frames are scored without standardization", {
   x <- data.frame(a = c(1L, 2L, 9L, 10L), b = c(2L, 4L, 18L, 20L))
   original <- x
@@ -178,4 +205,9 @@ test_that("a singleton cluster can still have defined indices", {
   scores <- score_partition(x, groups, stats::dist(x))
   expect_identical(all(is.finite(scores)), TRUE)
   expect_equal(scores[["silhouette"]], mean(c(8 / 9, 7 / 8, 0)))
+})
+
+test_that("overflowing pairwise distances stop with an explanation", {
+  x <- matrix(c(-1e200, 1e200, 0, 1, -1e200, 1e200, 0, 1), ncol = 2)
+  expect_snapshot(error = TRUE, compute_indices(x, list("2" = NULL)))
 })

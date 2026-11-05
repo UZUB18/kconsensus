@@ -4,7 +4,7 @@
 #' a consensus vote bar chart (`type = "consensus"`), per-method raw diagnostic
 #' curves (`type = "indices"`), or a method-by-K evaluation matrix
 #' (`type = "matrix"`). All views use a single accent color (`#0072B2`) for
-#' eligible selected or tied leading candidates and neutral greys for other
+#' eligible selected or tied leading candidates and neutral grays for other
 #' marks.
 #'
 #' @param x A `kconsensus_result` object returned by [kconsensus()].
@@ -169,11 +169,12 @@ plot_consensus_bars <- function(x) {
   df <- x$agreement
   df$k_factor <- factor(df$k, levels = sort(unique(df$k)))
   df$role <- if (has_single_winner(x)) {
-    leader_role <- if (identical(x$status, "plurality")) {
-      "Leading K (no majority)"
-    } else {
+    leader_role <- switch(
+      x$status,
+      plurality = "Leading K (no majority)",
+      single_vote = "Only valid vote",
       "Selected consensus K"
-    }
+    )
     ifelse(df$k == x$recommended_k, leader_role, "Other evaluated K")
   } else if (identical(x$status, "tie") && length(x$tied_candidates) > 0L) {
     ifelse(
@@ -189,6 +190,7 @@ plot_consensus_bars <- function(x) {
     levels = unique(c(
       "Selected consensus K",
       "Leading K (no majority)",
+      "Only valid vote",
       "Tied leading candidate",
       "Other evaluated K",
       "No eligible votes"
@@ -216,6 +218,7 @@ plot_consensus_bars <- function(x) {
       values = c(
         "Selected consensus K" = "#0072B2",
         "Leading K (no majority)" = "#0072B2",
+        "Only valid vote" = "#0072B2",
         "Tied leading candidate" = "#0072B2",
         "Other evaluated K" = "#B8B8B8",
         "No eligible votes" = "#D0D0D0"
@@ -275,7 +278,6 @@ extract_method_curve <- function(record, default_k) {
 
   if (nrow(scores) == 0L || is.null(y_col)) {
     k_vals <- if (nrow(scores) > 0L) as.integer(scores$k) else default_k
-    if (length(k_vals) == 0L) k_vals <- 2L
     return(list(
       panel = panel,
       points = data.frame(
@@ -492,23 +494,15 @@ plot_consensus_indices <- function(x) {
 }
 
 score_defined_at_k <- function(record, k_val) {
-  scores <- record$scores
-  row_idx <- match(k_val, scores$k)
+  row_idx <- match(k_val, record$scores$k)
   if (is.na(row_idx)) return(FALSE)
-  score_cols <- setdiff(names(scores), "k")
-  if (length(score_cols) == 0L) return(TRUE)
-  if (identical(record$method, "gap") && all(c("gap", "SE.sim") %in% score_cols)) {
-    return(is.finite(scores$gap[row_idx]) && is.finite(scores$SE.sim[row_idx]))
+  columns <- method_score_columns(record)
+  if (is.null(columns$value)) return(TRUE)
+  defined <- is.finite(record$scores[[columns$value]][row_idx])
+  if (!is.null(columns$se)) {
+    defined <- defined && is.finite(record$scores[[columns$se]][row_idx])
   }
-  if (identical(record$method, "elbow") && "wcss" %in% score_cols) {
-    return(is.finite(scores$wcss[row_idx]))
-  }
-  if ("score" %in% score_cols) {
-    return(is.finite(scores$score[row_idx]))
-  }
-  num_cols <- score_cols[vapply(scores[score_cols], is.numeric, logical(1))]
-  if (length(num_cols) == 0L) return(TRUE)
-  is.finite(scores[[num_cols[1L]]][row_idx])
+  defined
 }
 
 plot_consensus_matrix <- function(x) {

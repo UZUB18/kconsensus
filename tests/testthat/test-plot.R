@@ -241,6 +241,9 @@ test_that("matrix plot preserves K = 1 untested cells, marks excluded methods, a
   expect_identical(as.character(dunn_pref$cell_state), "Excluded preference")
   expect_match(as.character(dunn_pref$method_label), "Dunn [excluded]", fixed = TRUE)
 
+  indices_panels <- levels(plot(res, type = "indices")$data$panel)
+  expect_true(any(grepl("Dunn | K = 4 [excluded]", indices_panels, fixed = TRUE)))
+
   elbow_cells <- df[df$method == "elbow", , drop = FALSE]
   expect_identical(as.character(elbow_cells$cell_state), rep("Evaluated", 5L))
   expect_match(unique(as.character(elbow_cells$method_label)), "WCSS Elbow [ambiguous]", fixed = TRUE)
@@ -258,4 +261,75 @@ test_that("plots support standard ggplot2 customization and validate inputs", {
   expect_snapshot(error = TRUE, plot.kconsensus_result(list(a = 1)))
   expect_snapshot(error = TRUE, plot.kconsensus_result(res, y = 1:3))
   expect_snapshot(error = TRUE, plot.kconsensus_result(res, type = "unknown"))
+})
+
+# Drawing runs the facet labeller, themes and scales that ggplot_build() skips.
+expect_renders <- function(p) {
+  withr::local_pdf(NULL)
+  expect_no_warning(grob <- ggplot2::ggplotGrob(p))
+  expect_s3_class(grob, "gtable")
+}
+
+plot_vote <- function(method, k, scores = data.frame(k = 2:5, score = c(0.2, 0.6, 0.4, 0.3))) {
+  method_recommendation(method, k, "valid", scores = scores)
+}
+
+test_that("every plot type draws for every support level", {
+  failed <- method_recommendation("z", reason = "Failed.", scores = data.frame(k = 2:5))
+  results <- list(
+    unanimous = compute_consensus(list(plot_vote("a", 3L), plot_vote("b", 3L))),
+    majority = sample_consensus_fixture(),
+    plurality = compute_consensus(list(
+      plot_vote("a", 3L), plot_vote("b", 3L), plot_vote("c", 4L),
+      plot_vote("d", 5L), plot_vote("e", 2L)
+    )),
+    single_vote = compute_consensus(list(plot_vote("a", 3L), failed)),
+    tie = compute_consensus(list(plot_vote("a", 3L), plot_vote("b", 4L))),
+    no_valid_votes = compute_consensus(list(failed))
+  )
+  for (status in names(results)) {
+    expect_identical(results[[status]]$status, status)
+    for (type in c("consensus", "indices", "matrix")) {
+      expect_renders(plot(results[[status]], type = type))
+    }
+  }
+})
+
+test_that("undefined scores are shown as undefined in the matrix and indices views", {
+  res <- compute_consensus(list(
+    plot_vote("silhouette", 4L, data.frame(k = 2:5, score = c(0.4, 0.45, 0.5, 0.3))),
+    method_recommendation(
+      "dunn", NA_integer_, "undefined", "Non-finite scores at K = 3.",
+      scores = data.frame(k = 2:5, score = c(0.4, NA, 0.5, 0.3))
+    ),
+    method_recommendation(
+      "davies_bouldin", NA_integer_, "undefined", "Non-finite scores at K = 2, 3, 4, 5.",
+      scores = data.frame(k = 2:5, score = rep(NA_real_, 4))
+    )
+  ))
+
+  matrix_plot <- plot(res, type = "matrix")
+  dunn_k3 <- matrix_plot$data[matrix_plot$data$method == "dunn" & matrix_plot$data$k == 3L, ]
+  expect_identical(as.character(dunn_k3$cell_state), "Undefined score")
+  expect_identical(dunn_k3$cell_label, "NA")
+
+  indices_plot <- plot(res, type = "indices")
+  notes <- unlist(lapply(indices_plot$layers, function(layer) {
+    if (inherits(layer$geom, "GeomText")) layer$data$label
+  }))
+  expect_true("Undefined at K = 3" %in% notes)
+  expect_true("All scores undefined (undefined)" %in% notes)
+  expect_renders(matrix_plot)
+  expect_renders(indices_plot)
+})
+
+test_that("an upper-boundary winner is called out in every plot caption", {
+  res <- suppressWarnings(compute_consensus(list(plot_vote("a", 5L), plot_vote("b", 5L))))
+  for (type in c("consensus", "indices", "matrix")) {
+    expect_match(
+      plot(res, type = type)$labels$caption,
+      "Warning: Winner lies at the upper tested K boundary.",
+      fixed = TRUE
+    )
+  }
 })

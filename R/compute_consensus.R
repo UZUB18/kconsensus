@@ -52,10 +52,13 @@ compute_consensus <- function(recommendations) {
   leaders <- if (n_valid > 0L) agreement$k[votes == max(votes)] else integer()
   recommended <- if (length(leaders) == 1L) leaders else NA_integer_
   # Support grades describe the vote count only; no threshold is a confidence level.
+  # One valid vote cannot show agreement, so it is not called unanimous.
   status <- if (n_valid == 0L) {
     "no_valid_votes"
   } else if (length(leaders) > 1L) {
     "tie"
+  } else if (n_valid == 1L) {
+    "single_vote"
   } else if (max(votes) == n_valid) {
     "unanimous"
   } else if (2L * max(votes) > n_valid) {

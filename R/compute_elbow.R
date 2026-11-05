@@ -96,16 +96,3 @@ check_min_strength <- function(min_strength) {
   }
   invisible(min_strength)
 }
-
-plot_elbow <- function(elbow) {
-  k <- wcss <- NULL
-  ggplot2::ggplot(elbow$curve, ggplot2::aes(x = k, y = wcss)) +
-    ggplot2::geom_line() +
-    ggplot2::geom_point() +
-    ggplot2::labs(
-      title = "WCSS elbow curve",
-      x = "Number of clusters (K)",
-      y = "Total within-cluster sum of squares",
-      caption = elbow$reason
-    )
-}

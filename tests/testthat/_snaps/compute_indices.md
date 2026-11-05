@@ -1,3 +1,11 @@
+# only the requested indices are scored, with distances only for silhouette
+
+    Code
+      compute_indices(x, fits, indices = "gap")
+    Condition
+      Error:
+      ! `indices` must name internal indices only.
+
 # invalid fit containers and candidate names are rejected
 
     Code
@@ -93,4 +101,12 @@
     Condition
       Error:
       ! Cluster labels must be finite positive integers, one per observation.
+
+# overflowing pairwise distances stop with an explanation
+
+    Code
+      compute_indices(x, list(`2` = NULL))
+    Condition
+      Error:
+      ! Pairwise distances are non-finite; check the magnitude of `x`.
 

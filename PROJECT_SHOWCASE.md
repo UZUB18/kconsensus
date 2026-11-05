@@ -1,6 +1,6 @@
 # kconsensus: implementation and validation showcase
 
-**Development version:** 0.0.0.9000  
+**Version:** 0.1.0  
 **Work documented:** November 5, 2026  
 **Status:** implemented and software-checked; statistical limitations remain explicit.
 
@@ -22,7 +22,7 @@ and a separate Gap seed-stability study.
 
 | Evidence layer | Completed work | What it establishes |
 |---|---|---|
-| Unit tests | 563 assertions passed, without warnings | The tested implementation contracts hold |
+| Unit tests | 686 assertions passed, without warnings; 99.9% line coverage | The tested implementation contracts hold |
 | Separate-session package check | 0 errors, 0 warnings, 0 notes | The package passes the recorded development check |
 | Repeated-data study | 600 generated datasets; 700 consensus evaluations | Behavior under six specified designs and a paired K-range comparison |
 | Supplied benchmark | 19 valid runs and five expected-error cases | Reference agreement, input rejection and behavior on the supplied fixtures |
@@ -164,7 +164,7 @@ no claim about population cluster structure follows from that status.
 
 | Situation | Implemented behavior |
 |---|---|
-| Unique highest vote count | Return that K and grade its support in `status`: `unanimous`, `majority` (more than half of the valid votes) or `plurality` (most votes, no majority) |
+| Unique highest vote count | Return that K and grade its support in `status`: `unanimous`, `majority` (more than half of the valid votes), `plurality` (most votes, no majority) or `single_vote` (only one method voted) |
 | Tie for highest vote count | Return all tied candidates and `recommended_k = NA` |
 | Legitimate ambiguity or undefined method | Exclude its vote and retain the reason |
 | Explicitly ineligible method | Exclude it without deleting its evidence |
@@ -240,7 +240,7 @@ session information.
 
 | Result field | Contents |
 |---|---|
-| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one, with graded support (`unanimous`, `majority`, `plurality`, `tie`, `no_valid_votes`) |
+| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one, with graded support (`unanimous`, `majority`, `plurality`, `single_vote`, `tie`, `no_valid_votes`) |
 | `flags` | Descriptive notes: `upper_boundary`, `lower_boundary`, `single_cluster_vote` |
 | `agreement` | Votes and agreement percentage for every evaluated candidate |
 | `methods` | Recommendations, eligibility, inclusion, reasons and range endpoints |
@@ -248,7 +248,7 @@ session information.
 | `n_valid_methods` | Actual voting denominator |
 | `boundary_warning` | Upper tested-range warning flag |
 | `fits` | Central K-means solutions, named by K |
-| `settings` | Candidate vector, seed, B and elbow threshold |
+| `settings` | Candidate vector, selected methods, seed, B, nstart and elbow threshold |
 | `preprocessing` | Supplied-data and no-package-standardization flags |
 
 The exact tested candidate set is available in each method's `scores$k`;
@@ -614,9 +614,9 @@ for (type in names(sizes)) {
 | No-clusters calibration | Not established by seed stability. It needs independently generated null and clustered datasets and explicit error criteria. |
 | Elbow cutoff | No validated default. Automatic elbow selection abstains unless the caller supplies an uncalibrated threshold. |
 | Model shape | General K-means caveat is displayed. No automatic geometry detector or non-spherical clustering alternative was implemented. |
-| Large datasets | Pairwise-distance memory and simulation runtime remain important limits; optional distance-based scoring is not implemented. |
+| Large datasets | `methods` can leave out Gap and the distance-based indices, `nstart` and `B` trade precision for speed, and progress is reported in interactive sessions. Gap's reference simulations still run serially. |
 | Calculation failures | Failed fits, undefined indices and Gap failures now become reasoned abstentions with a warning. A method still abstains entirely if any tested K is undefined for it; scoring the remaining K is not implemented. |
-| Release metadata | Author name/email are still placeholders. Publication metadata must be completed without inventing identities or URLs. |
+| Release metadata | The maintainer is the GitHub identity UZUB18 with a noreply address. CRAN would require a monitored maintainer email. |
 | Website and project introduction | The README and the `choosing-k` vignette now introduce the package. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
 | Automated formatting | `air` was unavailable. Passing R checks does not mean an automatic formatter ran. |
 

@@ -54,22 +54,46 @@ recommend_index <- function(method, k, values, direction, notes = character()) {
   )
 }
 
+# Method names in their canonical (output) order.
+index_method_names <- c("silhouette", "calinski_harabasz", "davies_bouldin", "dunn")
+method_names <- c(index_method_names, "gap", "elbow")
+
+# Validate a user-supplied method selection and return it in canonical order.
+check_methods <- function(methods) {
+  if (
+    !is.character(methods) || length(methods) == 0L || anyNA(methods) ||
+      !all(methods %in% method_names) || anyDuplicated(methods)
+  ) {
+    stop(
+      sprintf(
+        "`methods` must be distinct names from: %s.",
+        paste0("\"", method_names, "\"", collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  method_names[method_names %in% methods]
+}
+
 # Adapt existing calculation results without rerunning any clustering or scoring.
-recommend_methods <- function(indices, gap = NULL, elbow = NULL) {
+# Only the requested methods get a record; gap and elbow may be NULL or an error.
+recommend_methods <- function(indices, gap = NULL, elbow = NULL, methods = method_names) {
+  methods <- check_methods(methods)
   directions <- c(
     silhouette = "max", calinski_harabasz = "max",
     davies_bouldin = "min", dunn = "max"
   )
+  index_methods <- intersect(names(directions), methods)
   if (
     !is.data.frame(indices) ||
-      !all(c("k", names(directions)) %in% names(indices))
+      !all(c("k", index_methods) %in% names(indices))
   ) {
-    stop("`indices` must contain k and the four internal-index score columns.",
+    stop("`indices` must contain k and a score column for every requested index.",
       call. = FALSE
     )
   }
   problems <- attr(indices, "problems")
-  records <- lapply(names(directions), function(method) {
+  records <- lapply(index_methods, function(method) {
     undefined_k <- indices$k[!is.finite(indices[[method]])]
     notes <- if (is.data.frame(problems)) {
       relevant <- problems[problems$k %in% undefined_k, , drop = FALSE]
@@ -81,41 +105,50 @@ recommend_methods <- function(indices, gap = NULL, elbow = NULL) {
       method, indices$k, indices[[method]], directions[[method]], notes = notes
     )
   })
-
-  if (is.null(gap) || inherits(gap, "error")) {
-    records[[5L]] <- method_recommendation("gap", reason = if (is.null(gap)) {
-      "Gap was not supplied."
-    } else {
-      conditionMessage(gap)
-    })
-  } else {
-    scores <- data.frame(k = seq_len(nrow(gap$gap$Tab)), gap$gap$Tab)
-    defined <- all(is.finite(as.matrix(scores[, -1L, drop = FALSE])))
-    records[[5L]] <- method_recommendation(
-      "gap",
-      preferred_k = if (defined) gap$k else NA_integer_,
-      status = if (defined) "valid" else "undefined",
-      reason = if (defined) gap$selection_method else "Gap contains non-finite scores.",
-      scores = scores,
-      diagnostics = gap[c("selection_method", "seed", "d_power")]
-    )
+  if ("gap" %in% methods) {
+    records[[length(records) + 1L]] <- gap_record(gap)
   }
-  if (is.null(elbow) || inherits(elbow, "error")) {
-    records[[6L]] <- method_recommendation("elbow", reason = if (is.null(elbow)) {
-      "Elbow was not supplied."
-    } else {
-      conditionMessage(elbow)
-    })
-  } else {
-    records[[6L]] <- method_recommendation(
-      "elbow",
-      preferred_k = elbow$k,
-      status = if (is.na(elbow$k)) "ambiguous" else "valid",
-      reason = elbow$reason,
-      scores = elbow$curve,
-      diagnostics = elbow[c("candidate_k", "strength", "min_strength")]
-    )
+  if ("elbow" %in% methods) {
+    records[[length(records) + 1L]] <- elbow_record(elbow)
   }
   names(records) <- vapply(records, \(record) record$method, character(1))
   records
+}
+
+gap_record <- function(gap) {
+  if (is.null(gap) || inherits(gap, "error")) {
+    return(method_recommendation("gap", reason = if (is.null(gap)) {
+      "Gap was not supplied."
+    } else {
+      conditionMessage(gap)
+    }))
+  }
+  scores <- data.frame(k = seq_len(nrow(gap$gap$Tab)), gap$gap$Tab)
+  defined <- all(is.finite(as.matrix(scores[, -1L, drop = FALSE])))
+  method_recommendation(
+    "gap",
+    preferred_k = if (defined) gap$k else NA_integer_,
+    status = if (defined) "valid" else "undefined",
+    reason = if (defined) gap$selection_method else "Gap contains non-finite scores.",
+    scores = scores,
+    diagnostics = gap[c("selection_method", "seed", "d_power")]
+  )
+}
+
+elbow_record <- function(elbow) {
+  if (is.null(elbow) || inherits(elbow, "error")) {
+    return(method_recommendation("elbow", reason = if (is.null(elbow)) {
+      "Elbow was not supplied."
+    } else {
+      conditionMessage(elbow)
+    }))
+  }
+  method_recommendation(
+    "elbow",
+    preferred_k = elbow$k,
+    status = if (is.na(elbow$k)) "ambiguous" else "valid",
+    reason = elbow$reason,
+    scores = elbow$curve,
+    diagnostics = elbow[c("candidate_k", "strength", "min_strength")]
+  )
 }

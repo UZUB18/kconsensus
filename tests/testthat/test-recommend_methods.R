@@ -118,3 +118,19 @@ test_that("abstention reasons explain undefined K from failed fits", {
     )
   }
 })
+
+test_that("records are built only for the requested methods, in canonical order", {
+  indices <- data.frame(k = 2:4, dunn = c(0.1, 0.3, 0.2), wcss = c(10, 6, 5))
+  records <- recommend_methods(indices, methods = c("elbow", "dunn"))
+
+  expect_named(records, c("dunn", "elbow"))
+  expect_identical(records$dunn$preferred_k, 3L)
+  expect_snapshot(error = TRUE, recommend_methods(indices, methods = "silhouette"))
+  expect_snapshot(error = TRUE, recommend_methods(indices, methods = c("dunn", "dunn")))
+  expect_snapshot(error = TRUE, recommend_methods(indices, methods = "kmeans"))
+})
+
+test_that("malformed index inputs are rejected", {
+  expect_snapshot(error = TRUE, recommend_index("m", 2:4, c(0.1, 0.2), "max"))
+  expect_snapshot(error = TRUE, recommend_index("m", 2:4, c(0.1, 0.2, 0.3), "up"))
+})

@@ -70,8 +70,8 @@ test_that("a Gap failure makes Gap abstain with a warning instead of stopping", 
 
 test_that("a K-means failure at one K is reported and does not stop the run", {
   real_fit_clusters <- fit_clusters
-  local_mocked_bindings(fit_clusters = function(x, k, seed) {
-    fits <- real_fit_clusters(x, k, seed = seed)
+  local_mocked_bindings(fit_clusters = function(x, k, seed, nstart) {
+    fits <- real_fit_clusters(x, k, seed = seed, nstart = nstart)
     fits[["3"]] <- simpleError("empty cluster: try a better set of initial centers")
     fits
   })
@@ -107,4 +107,115 @@ test_that("invalid arguments still stop before any fitting", {
     "`min_strength` must be NULL or a single finite number from 0 to 1.",
     fixed = TRUE
   )
+  expect_error(
+    kconsensus(iris[, 1:4], k = 3),
+    "`k` must contain at least two candidate cluster counts to compare.",
+    fixed = TRUE
+  )
+  expect_error(
+    kconsensus(iris[, 1:4], methods = c("gap", "ch")),
+    "`methods` must be distinct names from",
+    fixed = TRUE
+  )
+  expect_error(
+    kconsensus(iris[, 1:4], methods = character()),
+    "`methods` must be distinct names from",
+    fixed = TRUE
+  )
+  expect_error(
+    kconsensus(iris[, 1:4], nstart = 0),
+    "`nstart` must be a single whole number of at least 1.",
+    fixed = TRUE
+  )
+  expect_error(
+    kconsensus(iris[, 1:4], verbose = NA),
+    "`verbose` must be TRUE or FALSE.",
+    fixed = TRUE
+  )
+})
+
+test_that("only the requested methods are calculated and vote", {
+  x <- scale(iris[, 1:4])
+  full <- kconsensus(x, k = 2:5, B = 2)
+  local_mocked_bindings(compute_gap = function(...) stop("Gap should not run."))
+  local_mocked_bindings(
+    dist = function(...) stop("Distances should not be computed."),
+    .package = "stats"
+  )
+  result <- kconsensus(
+    x,
+    k = 2:5,
+    methods = c("elbow", "davies_bouldin", "calinski_harabasz")
+  )
+
+  selected <- c("calinski_harabasz", "davies_bouldin", "elbow")
+  expect_named(result$recommendations, selected)
+  expect_identical(result$methods$method, selected)
+  expect_identical(result$settings$methods, selected)
+  expect_identical(result$n_valid_methods, 2L)
+  for (method in selected) {
+    expect_identical(result$recommendations[[method]], full$recommendations[[method]])
+  }
+})
+
+test_that("nstart sets the random starts for the fits and for Gap", {
+  x <- scale(iris[, 1:4])
+  result <- kconsensus(x, k = 2:4, B = 3, nstart = 3)
+
+  expect_identical(result$fits, fit_clusters(x, 2:4, nstart = 3))
+  gap <- compute_gap(x, k_max = 4, B = 3, nstart = 3)
+  expect_identical(
+    unname(as.matrix(result$recommendations$gap$scores[, -1L])),
+    unname(gap$gap$Tab)
+  )
+  expect_identical(result$settings$nstart, 3)
+})
+
+test_that("verbose = TRUE reports progress and verbose = FALSE is silent", {
+  x <- scale(iris[, 1:4])
+  messages <- character()
+  withCallingHandlers(
+    kconsensus(x, k = 2:4, methods = c("silhouette", "dunn"), verbose = TRUE),
+    message = function(condition) {
+      messages <<- c(messages, conditionMessage(condition))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_identical(messages, c(
+    "Fitting K-means for K = 2:4 (25 random starts each).\n",
+    "Scoring the fits with Silhouette and Dunn.\n"
+  ))
+
+  gap_output <- capture_output(
+    gap_messages <- capture_messages(
+      kconsensus(x, k = 2:3, methods = "gap", B = 2, verbose = TRUE)
+    )
+  )
+  expect_match(
+    gap_messages[2],
+    "Running the gap statistic for K = 1:3 with 2 reference datasets",
+    fixed = TRUE
+  )
+  expect_match(gap_output, "Bootstrapping", fixed = TRUE)
+  expect_silent(kconsensus(x, k = 2:4, B = 2, verbose = FALSE))
+  option_messages <- withr::with_options(
+    list(kconsensus.verbose = TRUE),
+    capture_messages(kconsensus(x, k = 2:3, methods = "silhouette"))
+  )
+  expect_identical(option_messages, c(
+    "Fitting K-means for K = 2, 3 (25 random starts each).\n",
+    "Scoring the fits with Silhouette.\n"
+  ))
+})
+
+test_that("tibbles, data frames and matrices give the same votes", {
+  skip_if_not_installed("tibble")
+  x <- as.data.frame(scale(iris[, 1:4]))
+  from_df <- kconsensus(x, k = 2:4, B = 2)
+  from_tibble <- kconsensus(tibble::as_tibble(x), k = 2:4, B = 2)
+  from_matrix <- kconsensus(as.matrix(x), k = 2:4, B = 2)
+
+  expect_identical(from_tibble$recommendations, from_df$recommendations)
+  expect_equal(from_matrix$recommendations, from_df$recommendations)
+  expect_identical(from_tibble$status, from_df$status)
 })

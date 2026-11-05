@@ -16,13 +16,13 @@
     Output
       kconsensus: number of clusters for K-means
       --------------------------------------------
-      Recommended K: 4
-      Support:       Plurality, no majority (2 of 5 valid votes, 40%)
-      Runner-up:     K = 1, 3 and 5 (1 vote each)
-      Valid votes:   5 of 6 methods
-      Candidate K:   2:6
-      Seed:          1
-      Gap B:         10
+      Recommended K:  4
+      Support:        Plurality, no majority (2 of 5 valid votes, 40%)
+      Runner-up:      K = 1, 3 and 5 (1 vote each)
+      Valid votes:    5 of 6 methods
+      Candidate K:    2:6
+      Seed:           1
+      Gap B:          10
       
       Votes
         K = 1  1 vote   20%

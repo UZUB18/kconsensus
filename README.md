@@ -10,12 +10,13 @@ answer is "inconclusive", it says so.
 
 Most tools return one number even when the methods disagree. kconsensus keeps
 every method's scores, reports which methods did not vote and why, and grades
-the vote as unanimous, majority, plurality, tie or no valid votes.
+the vote as unanimous, majority, plurality, single vote, tie or no valid votes.
 
 ## Installation
 
 kconsensus is not on CRAN yet. Install the development version from a local
-copy of the source:
+copy of the source, for example from RStudio (which provides the pandoc needed
+to build the vignette):
 
 ``` r
 # install.packages("devtools")
@@ -41,12 +42,13 @@ result
 summary(result)
 #> kconsensus: number of clusters for K-means
 #> --------------------------------------------
-#> Recommended K: 2
-#> Support:       Unanimous (5 of 5 valid votes, 100%)
-#> Valid votes:   5 of 6 methods
-#> Candidate K:   2:10
-#> Seed:          6749
-#> Gap B:         100
+#> Recommended K:  2
+#> Support:        Unanimous (5 of 5 valid votes, 100%)
+#> Valid votes:    5 of 6 methods
+#> Candidate K:    2:10
+#> Seed:           6749
+#> K-means starts: 25
+#> Gap B:          100
 #>
 #> Votes
 #>   K = 2  5 votes  100%
@@ -110,9 +112,12 @@ kconsensus(noise, k = 2:8)
 | Gap statistic | `firstSEmax` rule; can choose K = 1 | `cluster::clusGap()` |
 | WCSS elbow | Strongest knee; abstains unless you set `elbow_min_strength` | kconsensus |
 
+All six run by default. Choose a subset with `methods`, for example
+`methods = c("silhouette", "gap")`.
+
 A method abstains, and leaves the vote denominator, when its best score is an
 exact tie, when a score is undefined, or when its calculation fails. The reason
-is always reported.
+is always reported, and a failed calculation also gives a warning.
 
 ## Reading the result
 
@@ -121,29 +126,46 @@ is always reported.
 | `unanimous` | Every valid method chose the same K. |
 | `majority` | The leading K has more than half of the valid votes. |
 | `plurality` | The leading K has the most votes but no majority: a weak preference. |
+| `single_vote` | Only one method voted, so there is no agreement to assess. |
 | `tie` | Several K share the most votes; `recommended_k` is `NA`. |
 | `no_valid_votes` | No method produced a valid vote. |
 
 Flags add context without changing any vote: `upper_boundary` (the winner is
-the largest K tested), `lower_boundary` (the winner is the smallest K its voting
-methods could evaluate) and `single_cluster_vote` (Gap, or another method, chose
-K = 1 while the others chose subdivisions).
+the largest K tested), `lower_boundary` (none of the methods voting for the
+winner evaluated a smaller K) and `single_cluster_vote` (Gap, or another
+method, chose K = 1 while the others chose subdivisions).
 
 Use `as.data.frame(result)` for the per-method table, and
 `as.data.frame(result, what = "scores")` for every score at every K. All plots
 (`type = "consensus"`, `"indices"` or `"matrix"`) are ordinary ggplot2
 objects.
 
+## Large datasets
+
+The gap statistic is usually by far the slowest step: it runs roughly
+`B * max(k) * nstart` K-means fits on simulated data. Silhouette needs all
+pairwise distances, so its memory grows with the square of the number of rows,
+and Dunn's computing time grows the same way. For a first look at a large
+dataset, leave those out or lower `B` and `nstart`:
+
+``` r
+kconsensus(x, k = 2:10, methods = c("calinski_harabasz", "davies_bouldin", "elbow"))
+kconsensus(x, k = 2:10, B = 20, nstart = 10)
+```
+
+In interactive sessions kconsensus reports its progress, including one dot per
+Gap reference dataset. Use `verbose = FALSE`, or
+`options(kconsensus.verbose = FALSE)`, to silence it.
+
 ## Good to know
 
 * Data are used exactly as supplied. Pass `scale(x)` yourself when variables
-  are on different scales.
+  are on different scales, after removing constant columns.
 * Only K-means is supported, so compact, roughly spherical groups are assumed.
 * Vote percentages describe agreement between related methods, not the
   probability that a K is correct.
-* Silhouette and Dunn need all pairwise distances, so memory grows with the
-  square of the number of rows. Gap's reference simulations (`B = 100` by
-  default) dominate the runtime.
+* Results are reproducible: `seed` controls every random step without changing
+  your session's random-number state.
 
 ## Learn more
 

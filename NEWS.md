@@ -1,9 +1,45 @@
-# kconsensus 0.0.0.9000
+# kconsensus 0.1.0
 
-* `kconsensus()` provides a public calculation interface retaining fitted partitions, full method evidence, eligibility and descriptive vote agreement.
-* `plot()` supports consensus bars, raw diagnostic curves and method-by-K evidence matrices as customizable ggplot objects.
-* `status` now grades the support for the leading K as `"unanimous"`, `"majority"` (more than half of the valid votes) or `"plurality"` (most votes but no majority), alongside `"tie"` and `"no_valid_votes"`. It replaces `"unique_winner"`, which reported a 2-of-5 vote the same way as a unanimous one. The consensus plot labels a plurality leader as having no majority.
-* New `flags` field with descriptive notes: `upper_boundary`, `lower_boundary` (the winner is the smallest K that every method voting for it evaluated) and `single_cluster_vote` (a method votes for K = 1 while others vote for K >= 2). Flags never change a vote.
-* New `print()`, `summary()` and `as.data.frame()` methods. `print()` gives a short overview instead of dumping the result list; `summary()` explains the support, runner-up, abstentions, flags and caveats; `as.data.frame()` returns the methods, agreement or long-format scores table.
-* `kconsensus()` no longer stops when a calculation fails part-way. A K-means error or non-convergence at one K, a non-finite index value, or a Gap failure makes only the affected methods abstain, with the reason recorded and a warning listing the failures. Invalid arguments (`B`, `elbow_min_strength`, data, `k`, `seed`) are now all checked before any fitting starts.
-* The README now describes the package with a worked example, and a new vignette, `vignette("choosing-k")`, walks through a dataset where the methods agree and one where they do not.
+First usable release.
+
+## Choosing K
+
+* `kconsensus()` fits K-means once per candidate K and lets the silhouette,
+  Calinski-Harabasz, Davies-Bouldin and Dunn indices, the gap statistic and an
+  optional elbow rule vote on the number of clusters. Data are used as supplied;
+  nothing is standardized automatically.
+* `status` grades the support for the leading K as `"unanimous"`, `"majority"`
+  (more than half of the valid votes), `"plurality"` (most votes but no
+  majority), `"single_vote"` (only one method voted), `"tie"` or
+  `"no_valid_votes"`. Ties and missing votes give no recommended K.
+* `flags` adds descriptive notes that never change a vote: `upper_boundary`,
+  `lower_boundary` (no method voting for the winner evaluated a smaller K) and
+  `single_cluster_vote` (a method voted for K = 1 while others voted for
+  subdivisions).
+* Methods abstain, with a recorded reason, on exact score ties, undefined
+  scores and failed calculations. A K-means error or non-convergence at one K,
+  a non-finite index value, or a Gap failure no longer stops the analysis; a
+  warning lists the failures instead. Invalid arguments still stop before any
+  fitting starts.
+* `methods` selects which methods run and vote, `nstart` sets the number of
+  K-means starts (including Gap's reference fits), and `verbose` shows progress
+  in interactive sessions (`options(kconsensus.verbose = FALSE)` silences it).
+  Leaving out `"gap"`, `"silhouette"` and `"dunn"` makes large datasets
+  practical.
+* A single candidate K is rejected: choosing K needs at least two candidates.
+* The error for `NaN` input points at `scale()` on a constant column, its most
+  common cause.
+
+## Results
+
+* `print()` gives a short overview, `summary()` explains the support, runner-up,
+  abstentions, flags and caveats, and `as.data.frame()` returns the methods,
+  agreement or long-format scores table.
+* `plot()` draws consensus bars, raw index curves or a method-by-K evidence
+  matrix as customizable ggplot objects.
+
+## Documentation
+
+* The README describes the package with worked examples, and
+  `vignette("choosing-k")` walks through a dataset where the methods agree and
+  one where they do not.

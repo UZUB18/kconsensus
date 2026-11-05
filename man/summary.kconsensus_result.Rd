@@ -38,6 +38,8 @@ The support level describes the vote count only:
 \item \code{"majority"}: the leading K has more than half of the valid votes.
 \item \code{"plurality"}: the leading K has the most votes but no majority, so it is
 a weak preference.
+\item \code{"single_vote"}: only one method cast a valid vote, so there is no
+agreement to assess.
 \item \code{"tie"}: several K share the most votes and no K is recommended.
 \item \code{"no_valid_votes"}: no method cast a valid vote.
 }

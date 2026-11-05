@@ -4,21 +4,45 @@
 \alias{kconsensus}
 \title{Compare K-means cluster counts using method agreement}
 \usage{
-kconsensus(x, k = 2:10, seed = 6749L, B = 100L, elbow_min_strength = NULL)
+kconsensus(
+  x,
+  k = 2:10,
+  methods = c("silhouette", "calinski_harabasz", "davies_bouldin", "dunn", "gap",
+    "elbow"),
+  seed = 6749L,
+  B = 100L,
+  nstart = 25L,
+  elbow_min_strength = NULL,
+  verbose = getOption("kconsensus.verbose", interactive())
+)
 }
 \arguments{
 \item{x}{A finite numeric matrix or numeric data frame.}
 
-\item{k}{Distinct candidate cluster counts, with \verb{2 <= k < nrow(x)} and enough
-distinct observations for every candidate.}
+\item{k}{At least two distinct candidate cluster counts, with
+\verb{2 <= k < nrow(x)} and enough distinct observations for every candidate.
+Gap also evaluates every K from 1 to \code{max(k)}.}
 
-\item{seed}{A nonnegative integer controlling reproducible local RNG scopes.}
+\item{methods}{The methods that vote: any of \code{"silhouette"},
+\code{"calinski_harabasz"}, \code{"davies_bouldin"}, \code{"dunn"}, \code{"gap"} and
+\code{"elbow"}. All six by default.}
+
+\item{seed}{A nonnegative integer controlling reproducible local RNG scopes.
+The caller's random-number state is left unchanged.}
 
 \item{B}{Number of Gap reference simulations; at least two. Small values are
-useful for software examples, not precise Monte Carlo estimates.}
+useful for quick looks and examples, not precise Monte Carlo estimates.}
+
+\item{nstart}{Number of random starts for every K-means fit, including Gap's
+fits to simulated data. Fewer starts are faster but more likely to miss the
+best partition.}
 
 \item{elbow_min_strength}{Optional user-supplied, uncalibrated elbow threshold.
 The elbow method abstains when this is \code{NULL}.}
+
+\item{verbose}{Show progress messages? Defaults to the \code{kconsensus.verbose}
+option, or \code{TRUE} in interactive sessions. Set
+\code{options(kconsensus.verbose = FALSE)} to silence them everywhere.}
 }
 \value{
 A \code{kconsensus_result} containing recommendations, all method scores,
@@ -28,7 +52,8 @@ diagnostics. Its main fields:
 \item \code{recommended_k}: the single leading K, or \code{NA} for a tie or no votes.
 \item \code{status}: the support for that K, one of \code{"unanimous"}, \code{"majority"}
 (more than half of the valid votes), \code{"plurality"} (most votes but no
-majority; a weak preference), \code{"tie"} or \code{"no_valid_votes"}.
+majority; a weak preference), \code{"single_vote"} (only one method voted),
+\code{"tie"} or \code{"no_valid_votes"}.
 \item \code{flags}: a data frame of descriptive notes (\code{flag}, \code{message}):
 \code{"upper_boundary"} when the winner is the highest K tested,
 \code{"lower_boundary"} when it is the smallest K that every method voting
@@ -43,20 +68,39 @@ Use \code{\link[=summary.kconsensus_result]{summary.kconsensus_result()}} for an
 \code{\link[=as.data.frame.kconsensus_result]{as.data.frame.kconsensus_result()}} to extract tables.
 }
 \description{
-Fits each candidate once for the four internal indices and WCSS. Gap uses
-separate reference simulations and can recommend one cluster. Variables are
-not standardized: pass \code{scale(x)} explicitly when appropriate.
+Fits K-means once for each candidate K and scores those fits with the
+requested methods. Gap uses separate reference simulations and can
+recommend one cluster. Variables are not standardized: pass \code{scale(x)}
+explicitly when appropriate.
 }
 \details{
-Invalid arguments stop immediately. A calculation that fails during the
-analysis does not: if K-means fails or does not converge at some K, or an
-index is undefined there, the methods that need that K abstain; if Gap
-fails, Gap abstains. A warning lists the failures, and \code{\link[=summary]{summary()}} shows each
-abstaining method's reason. Failed fits are kept in \code{fits} as the error
-condition.
+Invalid arguments stop immediately, before any fitting. A calculation that
+fails during the analysis does not: if K-means fails or does not converge
+at some K, or an index is undefined there, the methods that need that K
+abstain; if Gap fails, Gap abstains. A warning lists the failures, and
+\code{\link[=summary]{summary()}} shows each abstaining method's reason. Failed fits are kept in
+\code{fits} as the error condition.
 }
+\section{Runtime}{
+
+The gap statistic is usually by far the slowest step: it runs roughly
+\code{B * max(k) * nstart} K-means fits on simulated data. For a first look at a
+large dataset, use a smaller \code{B} or \code{nstart}, or leave \code{"gap"} out of
+\code{methods}. Silhouette needs all pairwise distances, so its memory grows with
+the square of the number of rows, and Dunn's computing time grows the same
+way. Leave them out of \code{methods} for very large datasets.
+}
+
 \examples{
 result <- kconsensus(scale(iris[, 1:4]), k = 2:5, B = 2)
 summary(result)
 plot(result, type = "consensus")
+
+# A faster look that skips Gap and the distance-based indices
+quick <- kconsensus(
+  scale(iris[, 1:4]),
+  k = 2:6,
+  methods = c("calinski_harabasz", "davies_bouldin", "elbow")
+)
+quick
 }
