@@ -36,7 +36,9 @@ modified, coerced to numeric or standardized.
 ## Software results
 
 All 24 jobs passed the applicable software checks: 18 valid fixtures, one
-extended-range valid run, and five intended invalid inputs. Each valid run
+extended-range valid run, and five intended invalid inputs. A re-run with
+version 0.1.0 reproduced every recommendation, agreement percentage, Gap choice
+and recovery metric exactly, and added the graded support level and flags. Each valid run
 matched `cluster::silhouette()` and the relevant `clusterCrit::intCriteria()`
 values on the exact retained partitions. WCSS, vote counts, denominators and
 Gap selection also matched their reference calculations. All three ggplot
@@ -48,30 +50,34 @@ expected rejections are not counted as valid-dataset failures.
 
 ## Selected statistical outcomes
 
-| Fixture | K range | Consensus | Agreement | Inlier ARI |
-|---|---|---|---:|---:|
-| `clear_3` | 2:10 | 3 | 100% | 1.000 |
-| `clear_5` | 2:10 | 5 | 100% | 1.000 |
-| `cluster_stress_test` | 2:10 | 3 | 100% | 0.924 |
-| `unbalanced_4` | 2:10 | 4 | 60% | 1.000 |
-| `high_dim_noise_3` | 2:10 | 2 | 80% | 0.530 |
-| `many_12` | 2:10 | 10; upper-bound warning | 100% | 0.840 |
-| `many_12` | 2:15 | Tie: 10 and 13; no recommendation | 40% each | Not defined |
+| Fixture | K range | Consensus | Support (0.1.0) | Agreement | Inlier ARI |
+|---|---|---|---|---:|---:|
+| `clear_3` | 2:10 | 3 | Unanimous | 100% | 1.000 |
+| `clear_5` | 2:10 | 5 | Unanimous | 100% | 1.000 |
+| `cluster_stress_test` | 2:10 | 3 | Unanimous | 100% | 0.924 |
+| `unbalanced_4` | 2:10 | 4 | Majority | 60% | 1.000 |
+| `high_dim_noise_3` | 2:10 | 2 | Majority; `lower_boundary` | 80% | 0.530 |
+| `many_12` | 2:10 | 10; upper-bound warning | Unanimous; `upper_boundary` | 100% | 0.840 |
+| `many_12` | 2:15 | Tie: 10 and 13; no recommendation | Tie | 40% each | Not defined |
 
 The stress fixture has four generating groups plus 30 outliers. Its all-row
 ARI is 0.865, compared with inlier ARI 0.924. This is not perfect recovery, and
 unanimous method voting does not establish that three is the true group count.
 
 The uniform control selected K = 6 and the single-Gaussian control selected
-K = 2, both with 40% agreement, although Gap selected K = 1 in each. The voting
+K = 2, both with 40% agreement, although Gap selected K = 1 in each. Version
+0.1.0 reports both as pluralities (no majority) with the `single_cluster_vote`
+flag; the single Gaussian also carries `lower_boundary`. The voting
 engine therefore remains a descriptive method-comparison tool, not a
 calibrated test for whether discrete clusters exist.
 
 Rings and moons each selected the upper boundary K = 10, with ARI 0.238 and
-0.198 respectively. These illustrate K-means model mismatch, not a reason to
+0.198 respectively, as majorities flagged `upper_boundary` (rings also
+`single_cluster_vote`). These illustrate K-means model mismatch, not a reason to
 assert that the generating geometric groups are the unique optimum for the
-K-means objective. `overlap_3` also selected the upper boundary. All four
-upper-bound warnings are preserved in the output.
+K-means objective. `overlap_3` also selected the upper boundary, as a plurality
+(40%) flagged `upper_boundary` and `single_cluster_vote`. All four upper-bound
+warnings are preserved in the output.
 
 For `outliers_3`, Dunn tied exactly and abstained. Its vote denominator was
 four, rather than five, and consensus agreement was 50%. On the extended

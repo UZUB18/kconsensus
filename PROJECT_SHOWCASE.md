@@ -391,6 +391,30 @@ generating groups. There were no calculation errors in the 700 evaluations;
 the statistical failure modes were retained rather than treated as software
 errors or hidden by tuning.
 
+### Graded support on the same datasets
+
+A re-run with version 0.1.0 reproduced every recommendation, tie, Gap choice
+and partition metric above exactly, and added the support level and flags:
+
+| Scenario | K range | Unanimous | Majority | Plurality | Tie | Unanimous or majority with no flag |
+|---|---|---:|---:|---:|---:|---:|
+| Separated Gaussian groups | 2:6 | 99 | 1 | 0 | 0 | 100 |
+| One very small group | 2:6 | 60 | 40 | 0 | 0 | 100 |
+| Uniform data | 2:6 | 1 | 58 | 24 | 17 | 16 |
+| Overlapping groups | 2:6 | 0 | 32 | 38 | 30 | 1 |
+| Overlapping groups | 2:15 | 0 | 27 | 48 | 25 | 1 |
+| Elongated groups | 2:6 | 0 | 45 | 31 | 24 | 0 |
+| High-dimensional noise | 2:6 | 0 | 100 | 0 | 0 | 0 |
+
+Before grading, 83 uniform-data runs looked like ordinary winners. Now only 16
+receive unanimous or majority support without a flag; the rest are pluralities,
+ties, or flagged, mostly because Gap chose K = 1. Clear structure keeps a clean
+signal: all 100 separated-data runs are unanimous or majority with no flag.
+The small-group design is the exception that matters: all 100 runs report
+strong, unflagged support for K = 2 although three groups generated the data.
+The grading describes agreement; it cannot detect a group the methods all
+miss.
+
 ## Supplied benchmark
 
 The supplied collection in
@@ -417,6 +441,11 @@ and the constant feature were retained.
 | `high_dim_noise_3` | 2:10 | 2 | 80% | 0.530 |
 | `many_12` | 2:10 | 10; upper-bound warning | 100% | 0.840 |
 | `many_12` | 2:15 | Tie: 10 and 13 | 40% each | Not defined |
+
+With version 0.1.0 the uniform and single-Gaussian controls (both 40%) are
+reported as pluralities flagged `single_cluster_vote`, `overlap_3` as a
+plurality flagged at the upper boundary, and `high_dim_noise_3` as a majority
+flagged `lower_boundary`. The re-run reproduced every number in this table.
 
 For contaminated fixtures, the primary recovery metric excludes truth label
 -1 **only when scoring recovery**. All rows remain in clustering. A secondary
