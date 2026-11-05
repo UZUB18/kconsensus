@@ -10,6 +10,8 @@ Description: Compares candidate K-means cluster counts using the silhouette,
     of the tested range, records why methods abstain, and provides customizable
     plots, without treating vote agreement as statistical confidence.
 License: MIT + file LICENSE
+URL: https://github.com/UZUB18/kconsensus
+BugReports: https://github.com/UZUB18/kconsensus/issues
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
 Language: en-US

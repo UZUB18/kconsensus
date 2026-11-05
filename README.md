@@ -1,6 +1,7 @@
 # kconsensus
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/UZUB18/kconsensus/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/UZUB18/kconsensus/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 kconsensus helps you choose the number of clusters, K, before running
@@ -15,6 +16,13 @@ the vote as unanimous, majority, plurality, single vote, tie or no valid votes.
 ## Installation
 
 kconsensus is not on CRAN yet. Install it in one of these ways.
+
+From GitHub:
+
+``` r
+# install.packages("remotes")
+remotes::install_github("UZUB18/kconsensus")
+```
 
 From a shared package file (`kconsensus_0.1.0.tar.gz`):
 

@@ -9,3 +9,4 @@
 ^PROJECT_SHOWCASE\.md$
 ^dev$
 ^dist$
+^\.github$
