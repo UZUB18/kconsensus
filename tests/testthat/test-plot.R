@@ -60,7 +60,7 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
       "Other evaluated K", "Other evaluated K"
     )
   )
-  expect_match(p$labels$subtitle, "Selected consensus candidate: K = 3", fixed = TRUE)
+  expect_match(p$labels$subtitle, "Majority: K = 3 (4 of 5 valid votes, 80%)", fixed = TRUE)
   expect_match(p$labels$subtitle, "Eligible denominator: 5 of 6 methods", fixed = TRUE)
   expect_match(p$labels$subtitle, "WCSS Elbow [ambiguous]", fixed = TRUE)
   expect_match(
@@ -73,6 +73,29 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
     "K-means favors compact, roughly spherical groups.",
     fixed = TRUE
   )
+})
+
+test_that("a plurality leader is labelled as lacking a majority", {
+  scores <- data.frame(k = 2:5, score = c(0.2, 0.6, 0.4, 0.3))
+  res <- as_kconsensus(compute_consensus(list(
+    method_recommendation("silhouette", 3L, "valid", scores = scores),
+    method_recommendation("dunn", 3L, "valid", scores = scores),
+    method_recommendation("davies_bouldin", 4L, "valid", scores = scores),
+    method_recommendation("calinski_harabasz", 5L, "valid", scores = scores),
+    method_recommendation("custom", 2L, "valid", scores = scores)
+  )))
+  p <- plot(res, type = "consensus")
+
+  expect_identical(
+    as.character(p$data$role),
+    c("Other evaluated K", "Leading K (no majority)", "Other evaluated K", "Other evaluated K")
+  )
+  expect_match(
+    p$labels$subtitle,
+    "Plurality, no majority: K = 3 (2 of 5 valid votes, 40%)",
+    fixed = TRUE
+  )
+  expect_no_warning(ggplot2::ggplot_build(p))
 })
 
 test_that("ties and zero-vote states are explicit and never pick an arbitrary winner", {

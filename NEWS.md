@@ -2,3 +2,6 @@
 
 * `kconsensus()` provides a public calculation interface retaining fitted partitions, full method evidence, eligibility and descriptive vote agreement.
 * `plot()` supports consensus bars, raw diagnostic curves and method-by-K evidence matrices as customizable ggplot objects.
+* `status` now grades the support for the leading K as `"unanimous"`, `"majority"` (more than half of the valid votes) or `"plurality"` (most votes but no majority), alongside `"tie"` and `"no_valid_votes"`. It replaces `"unique_winner"`, which reported a 2-of-5 vote the same way as a unanimous one. The consensus plot labels a plurality leader as having no majority.
+* New `flags` field with descriptive notes: `upper_boundary`, `lower_boundary` (the winner is the smallest K that every method voting for it evaluated) and `single_cluster_vote` (a method votes for K = 1 while others vote for K >= 2). Flags never change a vote.
+* New `print()`, `summary()` and `as.data.frame()` methods. `print()` gives a short overview instead of dumping the result list; `summary()` explains the support, runner-up, abstentions, flags and caveats; `as.data.frame()` returns the methods, agreement or long-format scores table.

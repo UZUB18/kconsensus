@@ -23,8 +23,24 @@ The elbow method abstains when this is \code{NULL}.}
 \value{
 A \code{kconsensus_result} containing recommendations, all method scores,
 fitted partitions, agreement percentages, method eligibility and boundary
-diagnostics.
+diagnostics. Its main fields:
+\itemize{
+\item \code{recommended_k}: the single leading K, or \code{NA} for a tie or no votes.
+\item \code{status}: the support for that K, one of \code{"unanimous"}, \code{"majority"}
+(more than half of the valid votes), \code{"plurality"} (most votes but no
+majority; a weak preference), \code{"tie"} or \code{"no_valid_votes"}.
+\item \code{flags}: a data frame of descriptive notes (\code{flag}, \code{message}):
+\code{"upper_boundary"} when the winner is the highest K tested,
+\code{"lower_boundary"} when it is the smallest K that every method voting
+for it evaluated, and \code{"single_cluster_vote"} when a method votes for
+K = 1 while others vote for K >= 2.
+\item \code{agreement}, \code{methods}, \code{recommendations}, \code{fits}, \code{settings} and
+\code{preprocessing}.
+}
+
 Agreement is descriptive, not a probability that a cluster count is true.
+Use \code{\link[=summary.kconsensus_result]{summary.kconsensus_result()}} for an explanation and
+\code{\link[=as.data.frame.kconsensus_result]{as.data.frame.kconsensus_result()}} to extract tables.
 }
 \description{
 Fits each candidate once for the four internal indices and WCSS. Gap uses
@@ -33,5 +49,6 @@ not standardized: pass \code{scale(x)} explicitly when appropriate.
 }
 \examples{
 result <- kconsensus(scale(iris[, 1:4]), k = 2:5, B = 2)
+summary(result)
 plot(result, type = "consensus")
 }

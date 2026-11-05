@@ -40,18 +40,7 @@ validate_consensus_plot_input <- function(x, y) {
       call. = FALSE
     )
   }
-  required <- c(
-    "recommended_k", "tied_candidates", "status", "n_valid_methods",
-    "agreement", "methods", "recommendations"
-  )
-  if (
-    !is.list(x) || !all(required %in% names(x)) ||
-      !is.data.frame(x$agreement) || !is.data.frame(x$methods) ||
-      !is.list(x$recommendations) || length(x$recommendations) == 0L
-  ) {
-    stop("`x` must be a valid `kconsensus_result` object.", call. = FALSE)
-  }
-  invisible(x)
+  validate_kconsensus_result(x)
 }
 
 friendly_method_name <- function(method) {
@@ -97,8 +86,13 @@ theme_kconsensus <- function() {
 consensus_subtitle <- function(x) {
   n_total <- nrow(x$methods)
   n_valid <- as.integer(x$n_valid_methods)
-  outcome <- if (identical(x$status, "unique_winner") && !is.na(x$recommended_k)) {
-    sprintf("Selected consensus candidate: K = %d", x$recommended_k)
+  outcome <- if (has_single_winner(x)) {
+    sprintf(
+      "%s: K = %d (%s)",
+      support_label(x$status),
+      x$recommended_k,
+      winner_share(x)
+    )
   } else if (identical(x$status, "tie") && length(x$tied_candidates) > 0L) {
     sprintf(
       "Tied leading candidates: K = %s (no single K selected)",
@@ -174,8 +168,13 @@ plot_consensus_bars <- function(x) {
 
   df <- x$agreement
   df$k_factor <- factor(df$k, levels = sort(unique(df$k)))
-  df$role <- if (identical(x$status, "unique_winner") && !is.na(x$recommended_k)) {
-    ifelse(df$k == x$recommended_k, "Selected consensus K", "Other evaluated K")
+  df$role <- if (has_single_winner(x)) {
+    leader_role <- if (identical(x$status, "plurality")) {
+      "Leading K (no majority)"
+    } else {
+      "Selected consensus K"
+    }
+    ifelse(df$k == x$recommended_k, leader_role, "Other evaluated K")
   } else if (identical(x$status, "tie") && length(x$tied_candidates) > 0L) {
     ifelse(
       df$k %in% x$tied_candidates,
@@ -189,18 +188,14 @@ plot_consensus_bars <- function(x) {
     df$role,
     levels = unique(c(
       "Selected consensus K",
+      "Leading K (no majority)",
       "Tied leading candidate",
       "Other evaluated K",
       "No eligible votes"
     ))
   )
   df$label <- if (x$n_valid_methods > 0L) {
-    pct <- ifelse(
-      abs(df$agreement_percent - round(df$agreement_percent)) < 1e-6,
-      sprintf("%.0f%%", df$agreement_percent),
-      sprintf("%.1f%%", df$agreement_percent)
-    )
-    sprintf("%d (%s)", df$votes, pct)
+    sprintf("%d (%s)", df$votes, format_percent(df$agreement_percent))
   } else {
     sprintf("%d (NA)", df$votes)
   }
@@ -220,6 +215,7 @@ plot_consensus_bars <- function(x) {
     ggplot2::scale_fill_manual(
       values = c(
         "Selected consensus K" = "#0072B2",
+        "Leading K (no majority)" = "#0072B2",
         "Tied leading candidate" = "#0072B2",
         "Other evaluated K" = "#B8B8B8",
         "No eligible votes" = "#D0D0D0"
@@ -250,22 +246,9 @@ extract_method_curve <- function(record, default_k) {
     isTRUE(record$eligible) &&
     !is.na(record$preferred_k)
 
-  score_cols <- setdiff(names(scores), "k")
-  y_col <- if (identical(method, "gap") && "gap" %in% score_cols) {
-    "gap"
-  } else if (identical(method, "elbow") && "wcss" %in% score_cols) {
-    "wcss"
-  } else if ("score" %in% score_cols) {
-    "score"
-  } else {
-    num_cols <- score_cols[vapply(scores[score_cols], is.numeric, logical(1))]
-    if (length(num_cols) > 0L) num_cols[1L] else NULL
-  }
-  se_col <- if (identical(method, "gap") && "SE.sim" %in% score_cols) {
-    "SE.sim"
-  } else {
-    NULL
-  }
+  columns <- method_score_columns(record)
+  y_col <- columns$value
+  se_col <- columns$se
 
   raw_gap <- record$diagnostics$score_gap
   has_score_gap <- is.numeric(raw_gap) &&

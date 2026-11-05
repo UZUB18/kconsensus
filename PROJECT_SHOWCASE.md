@@ -22,7 +22,7 @@ and a separate Gap seed-stability study.
 
 | Evidence layer | Completed work | What it establishes |
 |---|---|---|
-| Unit tests | 422 assertions passed, without warnings | The tested implementation contracts hold |
+| Unit tests | 497 assertions passed, without warnings | The tested implementation contracts hold |
 | Separate-session package check | 0 errors, 0 warnings, 0 notes | The package passes the recorded development check |
 | Repeated-data study | 600 generated datasets; 700 consensus evaluations | Behavior under six specified designs and a paired K-range comparison |
 | Supplied benchmark | 19 valid runs and five expected-error cases | Reference agreement, input rejection and behavior on the supplied fixtures |
@@ -164,12 +164,14 @@ no claim about population cluster structure follows from that status.
 
 | Situation | Implemented behavior |
 |---|---|
-| Unique highest vote count | Return that K, even if it is only a plurality |
+| Unique highest vote count | Return that K and grade its support in `status`: `unanimous`, `majority` (more than half of the valid votes) or `plurality` (most votes, no majority) |
 | Tie for highest vote count | Return all tied candidates and `recommended_k = NA` |
 | Legitimate ambiguity or undefined method | Exclude its vote and retain the reason |
 | Explicitly ineligible method | Exclude it without deleting its evidence |
 | No valid votes | Return no recommendation; agreement percentages are `NA` |
-| Unique winner at the global highest tested K | Emit and retain an upper-boundary warning |
+| Unique winner at the global highest tested K | Emit and retain an upper-boundary warning and `upper_boundary` flag |
+| Winner is the smallest K that every method voting for it evaluated | Add a descriptive `lower_boundary` flag |
+| A method votes for K = 1 while others vote for K >= 2 | Add a descriptive `single_cluster_vote` flag; the vote itself is unchanged |
 | Method disagreement | Preserve each supplied score curve and diagnostics |
 
 The public calculation pipeline remains fail-fast for calculation errors.
@@ -222,9 +224,12 @@ result <- kconsensus(
   elbow_min_strength = NULL
 )
 
+result            # short overview
+summary(result)   # support, runner-up, abstentions, flags and caveats
+
 result$recommended_k
-result$agreement
-result$methods
+as.data.frame(result)                      # one row per method
+as.data.frame(result, what = "scores")     # every method score at every K
 ```
 
 This reproduces the recorded stress-test configuration. Reproducibility
@@ -233,7 +238,8 @@ session information.
 
 | Result field | Contents |
 |---|---|
-| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one |
+| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one, with graded support (`unanimous`, `majority`, `plurality`, `tie`, `no_valid_votes`) |
+| `flags` | Descriptive notes: `upper_boundary`, `lower_boundary`, `single_cluster_vote` |
 | `agreement` | Votes and agreement percentage for every evaluated candidate |
 | `methods` | Recommendations, eligibility, inclusion, reasons and range endpoints |
 | `recommendations` | Full per-method score curves and diagnostics |
@@ -455,6 +461,9 @@ limitation, not a vote-counting or reference-score mismatch.
 | Gap | 1 | 1 |
 | Consensus | 6, with 40% | 2, with 40% |
 
+Both outcomes are now reported with `status = "plurality"` (no majority) and
+carry the `single_cluster_vote` flag, rather than as plain winners.
+
 The internal indices answer: **Which tested subdivision ranks best?** They do
 not establish that subdivision is warranted. They cannot evaluate K = 1 and
 currently abstain on exact score ties, not merely on weak evidence of structure.
@@ -599,7 +608,7 @@ for (type in names(sizes)) {
 
 | Open item | Current position |
 |---|---|
-| Gap-consensus disagreement diagnostic | Proposed, **not yet implemented**. A descriptive conflict warning would not establish that no clusters exist. |
+| Gap-consensus disagreement diagnostic | Implemented as the descriptive `single_cluster_vote` flag. It does not establish that no clusters exist, and it does not change any vote. |
 | No-clusters calibration | Not established by seed stability. It needs independently generated null and clustered datasets and explicit error criteria. |
 | Elbow cutoff | No validated default. Automatic elbow selection abstains unless the caller supplies an uncalibrated threshold. |
 | Model shape | General K-means caveat is displayed. No automatic geometry detector or non-spherical clustering alternative was implemented. |

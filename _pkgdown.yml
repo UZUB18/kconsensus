@@ -2,6 +2,8 @@ reference:
   - title: Clustering and consensus
     contents:
       - kconsensus
+      - summary.kconsensus_result
+      - as.data.frame.kconsensus_result
   - title: Visual diagnostics
     contents:
       - plot.kconsensus_result
