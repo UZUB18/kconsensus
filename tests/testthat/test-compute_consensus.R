@@ -18,7 +18,8 @@ test_that("the example agreement uses five eligible voting methods", {
   result <- compute_consensus(records)
 
   expect_identical(result$recommended_k, 3L)
-  expect_identical(result$status, "unique_winner")
+  expect_identical(result$status, "majority")
+  expect_identical(nrow(result$flags), 0L)
   expect_identical(result$tied_candidates, integer())
   expect_identical(result$n_valid_methods, 5L)
   expect_identical(result$agreement$votes, c(0L, 0L, 3L, 2L, 0L, 0L))
@@ -79,6 +80,96 @@ test_that("a unique upper-bound winner triggers an explicit warning", {
   expect_snapshot({
     compute_consensus(list(test_vote("upper_boundary", 6L)))$boundary_warning
   })
+  result <- suppressWarnings(compute_consensus(list(test_vote("upper_boundary", 6L))))
+  expect_identical(result$flags$flag, "upper_boundary")
+  expect_match(result$flags$message, "K = 6 is the highest K tested", fixed = TRUE)
+})
+
+test_that("support grades separate unanimous, majority and plurality winners", {
+  unanimous <- compute_consensus(list(test_vote("a", 3L), test_vote("b", 3L)))
+  expect_identical(unanimous$status, "unanimous")
+  expect_identical(unanimous$recommended_k, 3L)
+
+  majority <- compute_consensus(list(
+    test_vote("a", 3L), test_vote("b", 3L), test_vote("c", 3L), test_vote("d", 4L)
+  ))
+  expect_identical(majority$status, "majority")
+
+  # Exactly half is not a majority.
+  half <- compute_consensus(list(
+    test_vote("a", 3L), test_vote("b", 3L), test_vote("c", 4L), test_vote("d", 5L)
+  ))
+  expect_identical(half$status, "plurality")
+  expect_identical(half$recommended_k, 3L)
+
+  plurality <- compute_consensus(list(
+    test_vote("a", 3L), test_vote("b", 3L), test_vote("c", 4L),
+    test_vote("d", 5L), test_vote("e", 2L)
+  ))
+  expect_identical(plurality$status, "plurality")
+  expect_identical(plurality$recommended_k, 3L)
+  expect_equal(plurality$agreement$agreement_percent[plurality$agreement$k == 3L], 40)
+
+  # Abstentions leave the denominator, so they do not weaken the grade.
+  with_abstention <- compute_consensus(list(
+    test_vote("a", 3L), test_vote("b", 3L),
+    test_vote("c", NA_integer_, "ambiguous", "Exact tie.")
+  ))
+  expect_identical(with_abstention$status, "unanimous")
+})
+
+test_that("a winner at the lower edge of its voters' ranges is flagged", {
+  only_floor <- compute_consensus(list(
+    test_vote("silhouette", 2L), test_vote("dunn", 2L), test_vote("other", 4L)
+  ))
+  expect_identical(only_floor$flags$flag, "lower_boundary")
+  expect_identical(
+    only_floor$flags$message,
+    paste(
+      "K = 2 is the smallest K evaluated by Silhouette and Dunn, so none of the",
+      "methods voting for it could have chosen fewer clusters."
+    )
+  )
+
+  # Gap evaluated K = 1 and still chose K = 2, which answers the boundary question.
+  with_gap <- compute_consensus(list(
+    test_vote("silhouette", 2L), test_vote("gap", 2L, tested_k = 1:6)
+  ))
+  expect_identical(nrow(with_gap$flags), 0L)
+
+  # A winner above its voters' smallest tested K is not flagged.
+  not_floor <- compute_consensus(list(test_vote("a", 3L), test_vote("b", 2L), test_vote("c", 3L)))
+  expect_identical(nrow(not_floor$flags), 0L)
+})
+
+test_that("a K = 1 vote against subdivisions is flagged without changing the vote", {
+  result <- compute_consensus(list(
+    test_vote("silhouette", 3L), test_vote("dunn", 4L),
+    test_vote("gap", 1L, tested_k = 1:6)
+  ))
+
+  expect_identical(result$status, "tie")
+  expect_identical(result$tied_candidates, c(1L, 3L, 4L))
+  expect_identical(result$flags$flag, "single_cluster_vote")
+  expect_identical(
+    result$flags$message,
+    paste(
+      "Gap Statistic voted for K = 1 (no subdivision), while 2 other methods voted",
+      "for K >= 2. Silhouette and Dunn did not evaluate K = 1, so those votes do",
+      "not test it."
+    )
+  )
+
+  # A lone K = 1 vote has nothing to disagree with.
+  alone <- compute_consensus(list(test_vote("gap", 1L, tested_k = 1:6)))
+  expect_identical(nrow(alone$flags), 0L)
+
+  # Excluded methods neither vote nor trigger the flag.
+  excluded <- compute_consensus(list(
+    test_vote("silhouette", 3L),
+    test_vote("gap", 1L, tested_k = 1:6, eligible = FALSE, reason = "Excluded.")
+  ))
+  expect_identical(nrow(excluded$flags), 0L)
 })
 
 test_that("all supplied score curves and diagnostics survive aggregation", {
@@ -99,4 +190,15 @@ test_that("malformed and duplicated records cannot manufacture votes", {
   record <- test_vote("tampered")
   record$preferred_k <- 100L
   expect_snapshot(error = TRUE, compute_consensus(list(record)))
+})
+
+test_that("one valid vote is reported as a single vote, not as agreement", {
+  result <- compute_consensus(list(
+    test_vote("gap", 2L, tested_k = 1:6),
+    test_vote("silhouette", NA_integer_, "undefined", "Calculation failed.")
+  ))
+
+  expect_identical(result$status, "single_vote")
+  expect_identical(result$recommended_k, 2L)
+  expect_identical(result$n_valid_methods, 1L)
 })

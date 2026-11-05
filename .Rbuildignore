@@ -7,3 +7,5 @@
 ^\.checks$
 ^data_test$
 ^PROJECT_SHOWCASE\.md$
+^dev$
+^dist$

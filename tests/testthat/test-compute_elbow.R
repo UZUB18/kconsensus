@@ -72,16 +72,6 @@ test_that("elbow uses the stored WCSS even when other indices are undefined", {
   expect_identical(result$k, NA_integer_)
 })
 
-test_that("the elbow plot retains raw K and WCSS rather than normalized axes", {
-  elbow <- compute_elbow(2:6, c(100, 40, 30, 25, 20))
-  plot <- plot_elbow(elbow)
-
-  expect_s3_class(plot, "ggplot")
-  expect_identical(plot$data, elbow$curve)
-  expect_identical(plot$labels$caption, elbow$reason)
-  expect_equal(ggplot2::ggplot_build(plot)$data[[1]]$y, elbow$curve$wcss)
-})
-
 test_that("invalid curves and thresholds are rejected instead of cleaned", {
   expect_snapshot(error = TRUE, compute_elbow(c(2, 2, 3), c(100, 40, 20)))
   expect_snapshot(error = TRUE, compute_elbow(c(2, NA, 4), c(100, 40, 20)))

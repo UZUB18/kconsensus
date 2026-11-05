@@ -98,7 +98,7 @@ run_supplied_benchmark <- function(
     messages <- character()
     started <- proc.time()[["elapsed"]]
     result <- tryCatch(withCallingHandlers(
-      kconsensus::kconsensus(input$x, k = 2:item$k_max, seed = seed, B = B),
+      kconsensus::kconsensus(input$x, k = 2:item$k_max, seed = seed, B = B, verbose = FALSE),
       warning = function(condition) {
         messages <<- c(messages, conditionMessage(condition))
         invokeRestart("muffleWarning")
@@ -130,6 +130,7 @@ run_supplied_benchmark <- function(
       outliers = if (is.null(truth)) NA_integer_ else sum(truth == -1),
       recommended_k = preferred,
       status = if (error) "error" else result$status,
+      flags = if (error) "" else paste(result$flags$flag, collapse = ","),
       tied_candidates = if (error) "" else paste(result$tied_candidates, collapse = ","),
       agreement_percent = if (error || result$n_valid_methods == 0L) NA_real_ else max(result$agreement$agreement_percent),
       voting_methods = if (error) 0L else result$n_valid_methods,

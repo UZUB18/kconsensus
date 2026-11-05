@@ -4,7 +4,7 @@
 #' a consensus vote bar chart (`type = "consensus"`), per-method raw diagnostic
 #' curves (`type = "indices"`), or a method-by-K evaluation matrix
 #' (`type = "matrix"`). All views use a single accent color (`#0072B2`) for
-#' eligible selected or tied leading candidates and neutral greys for other
+#' eligible selected or tied leading candidates and neutral grays for other
 #' marks.
 #'
 #' @param x A `kconsensus_result` object returned by [kconsensus()].
@@ -40,18 +40,7 @@ validate_consensus_plot_input <- function(x, y) {
       call. = FALSE
     )
   }
-  required <- c(
-    "recommended_k", "tied_candidates", "status", "n_valid_methods",
-    "agreement", "methods", "recommendations"
-  )
-  if (
-    !is.list(x) || !all(required %in% names(x)) ||
-      !is.data.frame(x$agreement) || !is.data.frame(x$methods) ||
-      !is.list(x$recommendations) || length(x$recommendations) == 0L
-  ) {
-    stop("`x` must be a valid `kconsensus_result` object.", call. = FALSE)
-  }
-  invisible(x)
+  validate_kconsensus_result(x)
 }
 
 friendly_method_name <- function(method) {
@@ -84,7 +73,7 @@ theme_kconsensus <- function() {
     ggplot2::theme(
       panel.grid.minor = ggplot2::element_blank(),
       panel.grid.major.x = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold", hjust = 0, size = 9.5),
+      strip.text = ggplot2::element_text(face = "bold", hjust = 0, size = 8.5),
       plot.title = ggplot2::element_text(face = "bold"),
       plot.title.position = "plot",
       plot.caption.position = "plot",
@@ -97,8 +86,13 @@ theme_kconsensus <- function() {
 consensus_subtitle <- function(x) {
   n_total <- nrow(x$methods)
   n_valid <- as.integer(x$n_valid_methods)
-  outcome <- if (identical(x$status, "unique_winner") && !is.na(x$recommended_k)) {
-    sprintf("Selected consensus candidate: K = %d", x$recommended_k)
+  outcome <- if (has_single_winner(x)) {
+    sprintf(
+      "%s: K = %d (%s)",
+      support_label(x$status),
+      x$recommended_k,
+      winner_share(x)
+    )
   } else if (identical(x$status, "tie") && length(x$tied_candidates) > 0L) {
     sprintf(
       "Tied leading candidates: K = %s (no single K selected)",
@@ -121,9 +115,8 @@ consensus_subtitle <- function(x) {
       "excluded",
       non_voting$status
     )
-    details <- paste(
-      sprintf("%s [%s]", friendly_method_name(non_voting$method), tags),
-      collapse = ", "
+    details <- wrap_items(
+      sprintf("%s [%s]", friendly_method_name(non_voting$method), tags)
     )
     denom <- sprintf(
       "Eligible denominator: %d of %d methods (%d non-voting)\n%s",
@@ -134,6 +127,22 @@ consensus_subtitle <- function(x) {
     )
   }
   paste(outcome, denom, sep = "\n")
+}
+
+# Join items with commas, starting a new line before a line would exceed `width`.
+wrap_items <- function(items, width = 60L) {
+  lines <- character()
+  current <- ""
+  for (item in items) {
+    candidate <- if (nzchar(current)) paste0(current, ", ", item) else item
+    if (nzchar(current) && nchar(candidate) > width) {
+      lines <- c(lines, paste0(current, ","))
+      current <- item
+    } else {
+      current <- candidate
+    }
+  }
+  paste(c(lines, current), collapse = "\n")
 }
 
 plot_consensus_bars <- function(x) {
@@ -174,8 +183,14 @@ plot_consensus_bars <- function(x) {
 
   df <- x$agreement
   df$k_factor <- factor(df$k, levels = sort(unique(df$k)))
-  df$role <- if (identical(x$status, "unique_winner") && !is.na(x$recommended_k)) {
-    ifelse(df$k == x$recommended_k, "Selected consensus K", "Other evaluated K")
+  df$role <- if (has_single_winner(x)) {
+    leader_role <- switch(
+      x$status,
+      plurality = "Leading K (no majority)",
+      single_vote = "Only valid vote",
+      "Selected consensus K"
+    )
+    ifelse(df$k == x$recommended_k, leader_role, "Other evaluated K")
   } else if (identical(x$status, "tie") && length(x$tied_candidates) > 0L) {
     ifelse(
       df$k %in% x$tied_candidates,
@@ -189,21 +204,19 @@ plot_consensus_bars <- function(x) {
     df$role,
     levels = unique(c(
       "Selected consensus K",
+      "Leading K (no majority)",
+      "Only valid vote",
       "Tied leading candidate",
       "Other evaluated K",
       "No eligible votes"
     ))
   )
-  df$label <- if (x$n_valid_methods > 0L) {
-    pct <- ifelse(
-      abs(df$agreement_percent - round(df$agreement_percent)) < 1e-6,
-      sprintf("%.0f%%", df$agreement_percent),
-      sprintf("%.1f%%", df$agreement_percent)
-    )
-    sprintf("%d (%s)", df$votes, pct)
-  } else {
-    sprintf("%d (NA)", df$votes)
-  }
+  # Bars without votes stay unlabeled so many candidates do not crowd the plot.
+  df$label <- ifelse(
+    df$votes > 0L,
+    sprintf("%d (%s)", df$votes, format_percent(df$agreement_percent)),
+    ""
+  )
 
   upper_y <- max(1L, as.integer(x$n_valid_methods), max(df$votes, na.rm = TRUE))
   ggplot2::ggplot(
@@ -220,9 +233,16 @@ plot_consensus_bars <- function(x) {
     ggplot2::scale_fill_manual(
       values = c(
         "Selected consensus K" = "#0072B2",
+        "Leading K (no majority)" = "#0072B2",
+        "Only valid vote" = "#0072B2",
         "Tied leading candidate" = "#0072B2",
         "Other evaluated K" = "#B8B8B8",
         "No eligible votes" = "#D0D0D0"
+      ),
+      # Only the highlighted bars need a key; gray bars are the other K.
+      breaks = c(
+        "Selected consensus K", "Leading K (no majority)",
+        "Only valid vote", "Tied leading candidate"
       ),
       drop = TRUE,
       name = NULL
@@ -250,22 +270,9 @@ extract_method_curve <- function(record, default_k) {
     isTRUE(record$eligible) &&
     !is.na(record$preferred_k)
 
-  score_cols <- setdiff(names(scores), "k")
-  y_col <- if (identical(method, "gap") && "gap" %in% score_cols) {
-    "gap"
-  } else if (identical(method, "elbow") && "wcss" %in% score_cols) {
-    "wcss"
-  } else if ("score" %in% score_cols) {
-    "score"
-  } else {
-    num_cols <- score_cols[vapply(scores[score_cols], is.numeric, logical(1))]
-    if (length(num_cols) > 0L) num_cols[1L] else NULL
-  }
-  se_col <- if (identical(method, "gap") && "SE.sim" %in% score_cols) {
-    "SE.sim"
-  } else {
-    NULL
-  }
+  columns <- method_score_columns(record)
+  y_col <- columns$value
+  se_col <- columns$se
 
   raw_gap <- record$diagnostics$score_gap
   has_score_gap <- is.numeric(raw_gap) &&
@@ -288,11 +295,16 @@ extract_method_curve <- function(record, default_k) {
   } else {
     NULL
   }
-  panel <- paste(c(friendly, status_tag, detail_tag), collapse = " | ")
+  # A note about undefined scores replaces the detail line in the panel title,
+  # where it cannot be clipped or cover data points.
+  panel_title <- function(note) {
+    paste(c(friendly, status_tag, if (is.null(note)) detail_tag else note), collapse = " | ")
+  }
 
   if (nrow(scores) == 0L || is.null(y_col)) {
     k_vals <- if (nrow(scores) > 0L) as.integer(scores$k) else default_k
-    if (length(k_vals) == 0L) k_vals <- 2L
+    note <- "No scores available"
+    panel <- panel_title(note)
     return(list(
       panel = panel,
       points = data.frame(
@@ -310,7 +322,7 @@ extract_method_curve <- function(record, default_k) {
         status = rep(record$status, length(k_vals)),
         eligible = rep(record$eligible, length(k_vals))
       ),
-      note = sprintf("No finite score curve (%s)", record$status)
+      note = note
     ))
   }
 
@@ -327,6 +339,14 @@ extract_method_curve <- function(record, default_k) {
   seg_num <- cumsum(breaks)
   seg_id <- ifelse(finite, paste0(method, "_", seg_num), NA_character_)
   is_sel <- finite & is_eligible_valid & (as.integer(k_num) == record$preferred_k)
+  note <- if (!any(finite)) {
+    "All scores undefined"
+  } else if (any(!finite)) {
+    sprintf("Undefined at K = %s", paste(as.integer(k_num[!finite]), collapse = ", "))
+  } else {
+    NULL
+  }
+  panel <- panel_title(note)
 
   list(
     panel = panel,
@@ -349,21 +369,12 @@ extract_method_curve <- function(record, default_k) {
       status = rep(record$status, length(k_num)),
       eligible = rep(record$eligible, length(k_num))
     ),
-    note = if (!any(finite)) {
-      sprintf("All scores undefined (%s)", record$status)
-    } else if (any(!finite)) {
-      sprintf(
-        "Undefined at K = %s",
-        paste(as.integer(k_num[!finite]), collapse = ", ")
-      )
-    } else {
-      NULL
-    }
+    note = note
   )
 }
 
 plot_consensus_indices <- function(x) {
-  k <- value <- segment_id <- point_role <- ymin <- ymax <- label <- NULL
+  k <- value <- segment_id <- point_role <- ymin <- ymax <- NULL
   all_k <- sort(unique(unlist(lapply(x$recommendations, \(r) r$scores$k))))
   default_k <- if (length(all_k) > 0L) min(all_k) else 2L
 
@@ -399,21 +410,6 @@ plot_consensus_indices <- function(x) {
   if (!is.null(missing_df) && nrow(missing_df) > 0L) {
     missing_df$panel <- factor(missing_df$panel, levels = panel_levels)
   }
-
-  note_rows <- lapply(extracted, function(item) {
-    if (is.null(item$note)) return(NULL)
-    pts <- item$points
-    fin <- pts$value[is.finite(pts$value)]
-    y_pos <- if (length(fin) > 0L) max(fin) else 0
-    x_pos <- stats::median(pts$k, na.rm = TRUE)
-    data.frame(
-      panel = factor(item$panel, levels = panel_levels),
-      k = x_pos,
-      value = y_pos,
-      label = item$note
-    )
-  })
-  note_df <- do.call(rbind, note_rows)
 
   plot_df <- raw_df
   plot_df <- plot_df[order(plot_df$panel, plot_df$k), , drop = FALSE]
@@ -465,15 +461,6 @@ plot_consensus_indices <- function(x) {
         inherit.aes = FALSE, sides = "b", color = "#A6A6A6"
       )
     }) +
-    (if (!is.null(note_df) && nrow(note_df) > 0L) {
-      ggplot2::geom_text(
-        data = note_df,
-        ggplot2::aes(x = k, y = value, label = label),
-        vjust = -0.4,
-        size = 2.9,
-        color = "#595959"
-      )
-    }) +
     ggplot2::facet_wrap(
       ~panel, scales = "free_y", drop = FALSE, ncol = 3,
       labeller = ggplot2::as_labeller(function(labels) {
@@ -481,7 +468,11 @@ plot_consensus_indices <- function(x) {
         gsub("SE.sim = simulation SE (not CI)", "Simulation SE (not CI)", labels, fixed = TRUE)
       })
     ) +
-    ggplot2::scale_x_continuous(breaks = k_breaks) +
+    ggplot2::scale_x_continuous(
+      breaks = k_breaks,
+      guide = ggplot2::guide_axis(check.overlap = TRUE)
+    ) +
+    ggplot2::scale_y_continuous(n.breaks = 4) +
     ggplot2::scale_color_manual(
       values = c(
         "Eligible preferred K" = "#0072B2",
@@ -489,7 +480,10 @@ plot_consensus_indices <- function(x) {
         "Undefined / abstained" = "#A6A6A6"
       ),
       limits = c("Eligible preferred K", "Evaluated K", "Undefined / abstained"),
-      breaks = unique(finite_df$point_role),
+      breaks = intersect(
+        c("Eligible preferred K", "Evaluated K", "Undefined / abstained"),
+        unique(finite_df$point_role)
+      ),
       drop = TRUE,
       name = NULL
     ) +
@@ -509,23 +503,15 @@ plot_consensus_indices <- function(x) {
 }
 
 score_defined_at_k <- function(record, k_val) {
-  scores <- record$scores
-  row_idx <- match(k_val, scores$k)
+  row_idx <- match(k_val, record$scores$k)
   if (is.na(row_idx)) return(FALSE)
-  score_cols <- setdiff(names(scores), "k")
-  if (length(score_cols) == 0L) return(TRUE)
-  if (identical(record$method, "gap") && all(c("gap", "SE.sim") %in% score_cols)) {
-    return(is.finite(scores$gap[row_idx]) && is.finite(scores$SE.sim[row_idx]))
+  columns <- method_score_columns(record)
+  if (is.null(columns$value)) return(TRUE)
+  defined <- is.finite(record$scores[[columns$value]][row_idx])
+  if (!is.null(columns$se)) {
+    defined <- defined && is.finite(record$scores[[columns$se]][row_idx])
   }
-  if (identical(record$method, "elbow") && "wcss" %in% score_cols) {
-    return(is.finite(scores$wcss[row_idx]))
-  }
-  if ("score" %in% score_cols) {
-    return(is.finite(scores$score[row_idx]))
-  }
-  num_cols <- score_cols[vapply(scores[score_cols], is.numeric, logical(1))]
-  if (length(num_cols) == 0L) return(TRUE)
-  is.finite(scores[[num_cols[1L]]][row_idx])
+  defined
 }
 
 plot_consensus_matrix <- function(x) {
@@ -673,6 +659,11 @@ plot_consensus_matrix <- function(x) {
       drop = TRUE,
       name = NULL
     ) +
+    # More than three legend keys wrap onto two rows to fit narrow plots.
+    ggplot2::guides(fill = ggplot2::guide_legend(
+      nrow = if (length(unique(grid_df$cell_state)) > 3L) 2L else 1L,
+      byrow = TRUE
+    )) +
     ggplot2::labs(
       title = "Method-by-K evidence",
       subtitle = consensus_subtitle(x),

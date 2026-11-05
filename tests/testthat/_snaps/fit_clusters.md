@@ -1,3 +1,43 @@
+# nstart sets the number of random starts
+
+    Code
+      fit_clusters(x, 2, nstart = nstart)
+    Condition
+      Error:
+      ! `nstart` must be a single whole number of at least 1.
+
+---
+
+    Code
+      fit_clusters(x, 2, nstart = nstart)
+    Condition
+      Error:
+      ! `nstart` must be a single whole number of at least 1.
+
+---
+
+    Code
+      fit_clusters(x, 2, nstart = nstart)
+    Condition
+      Error:
+      ! `nstart` must be a single whole number of at least 1.
+
+---
+
+    Code
+      fit_clusters(x, 2, nstart = nstart)
+    Condition
+      Error:
+      ! `nstart` must be a single whole number of at least 1.
+
+---
+
+    Code
+      fit_clusters(x, 2, nstart = nstart)
+    Condition
+      Error:
+      ! `nstart` must be a single whole number of at least 1.
+
 # invalid data and candidate counts are rejected before fitting
 
     Code

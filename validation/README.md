@@ -61,6 +61,37 @@ are also checked by the regular unit tests.
 | High dimensional | 2:6 | 0/100 | 0.555 | 0 |
 | Uniform | 2:6 | Not defined | Not defined | 17 |
 
+### Support levels (version 0.1.0)
+
+The study was re-run with version 0.1.0, which grades the support for each
+recommendation and adds descriptive flags. The re-run reproduced every
+recommendation, tie, Gap choice, silhouette value and partition metric of the
+original run exactly; only the status labels and flags are new.
+
+| Scenario | K range | Unanimous | Majority | Plurality | Tie | Unanimous or majority with no flag |
+|---|---|---:|---:|---:|---:|---:|
+| Separated | 2:6 | 99 | 1 | 0 | 0 | 100 |
+| Small group | 2:6 | 60 | 40 | 0 | 0 | 100 |
+| Uniform | 2:6 | 1 | 58 | 24 | 17 | 16 |
+| Overlapping | 2:6 | 0 | 32 | 38 | 30 | 1 |
+| Overlapping | 2:15 | 0 | 27 | 48 | 25 | 1 |
+| Elongated | 2:6 | 0 | 45 | 31 | 24 | 0 |
+| High dimensional | 2:6 | 0 | 100 | 0 | 0 | 0 |
+
+No run ended with a single valid vote. On separated data, every run gave
+unanimous or majority support with no flag. On uniform data only 16 runs did;
+the other 84 were pluralities, ties, or carried a flag, mostly
+`single_cluster_vote` because Gap chose K = 1 (81 runs). Every high-dimensional
+run was a majority for K = 2 flagged `lower_boundary`: none of the methods
+voting for K = 2 could have chosen fewer clusters.
+
+The grading does not rescue the small-group design. All 100 runs reported
+unanimous or majority support for K = 2 without any flag, although the data
+were generated with three groups. Strong, unflagged agreement is therefore a
+descriptive pattern, not a calibrated test that the recommended K is right.
+
+### Recovery and partition agreement
+
 Recovery counts use all 100 repetitions, including ties as non-recoveries.
 Adjusted Rand summaries are conditional on a unique recommendation; ties have
 no selected partition. The CSV also reports 95% Wilson intervals for the Monte
@@ -74,7 +105,7 @@ Rand index. An aggregate partition score can conceal failure on a tiny group.
 
 The high-dimensional scenario also selected K = 2 in all 100 repetitions.
 Its median selected silhouette was 0.176 versus 0.761 for the separated 2D
-scenario. Median case runtime was 10.15 versus 1.14 seconds on this machine
+scenario. Median case runtime was 9.56 versus 1.06 seconds on this machine
 with four workers; these timings are descriptive, not portable benchmarks.
 
 Uniform data produced K = 2, 3, 4, 5 and 6 in 1, 4, 43, 7 and 28 repetitions,
@@ -95,9 +126,10 @@ detector has been asserted or validated.
 
 ## Artifacts
 
-`statistical_behavior_summary.csv` contains scenario summaries and Monte Carlo
-intervals. `statistical_behavior_trials.csv` retains every evaluation, warning,
-timing and partition diagnostic. `statistical_behavior.rds` additionally keeps
+`statistical_behavior_summary.csv` contains scenario summaries, support-level
+counts, flag rates and Monte Carlo intervals. `statistical_behavior_trials.csv`
+retains every evaluation, status, flag, warning, timing and partition
+diagnostic. `statistical_behavior.rds` additionally keeps
 the full method score curves and records, seeds, paired-range summary and
 session information. This directory is excluded from package builds so the
 long study is not run during routine package checks.

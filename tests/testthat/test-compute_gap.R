@@ -29,6 +29,30 @@ test_that("Gap matches the seeded reference calculation and firstSEmax", {
   ))
 })
 
+test_that("Gap uses nstart for every fit and can show clusGap progress", {
+  x <- scale(iris[, 1:4])
+  result <- compute_gap(x, k_max = 3, B = 4, seed = 3647L, nstart = 3)
+  expected <- withr::with_seed(3647L, cluster::clusGap(
+    x,
+    FUNcluster = function(z, k) {
+      stats::kmeans(z, centers = k, nstart = 3, iter.max = 100)
+    },
+    K.max = 3,
+    B = 4,
+    d.power = 1,
+    spaceH0 = "scaledPCA",
+    verbose = FALSE
+  ))
+
+  expect_identical(result$gap$Tab, expected$Tab)
+  expect_output(
+    compute_gap(x, k_max = 2, B = 2, verbose = TRUE),
+    "Bootstrapping",
+    fixed = TRUE
+  )
+  expect_silent(compute_gap(x, k_max = 2, B = 2))
+})
+
 test_that("Gap can report K = 1 without changing the internal candidate range", {
   x <- as.matrix(expand.grid(a = 1:5, b = 1:5))
   result <- compute_gap(x, k_max = 3, B = 5, seed = 3647L)

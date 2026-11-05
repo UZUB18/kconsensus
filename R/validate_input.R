@@ -30,7 +30,18 @@ validate_input <- function(x, k) {
 
   values <- as.matrix(x)
   if (anyNA(values)) {
-    stop("`x` must not contain missing values (NA or NaN).", call. = FALSE)
+    stop(
+      paste0(
+        "`x` must not contain missing values (NA or NaN).",
+        if (any(is.nan(values))) {
+          paste(
+            " NaN often comes from scale() applied to a constant column;",
+            "remove constant columns before scaling."
+          )
+        }
+      ),
+      call. = FALSE
+    )
   }
   if (any(!is.finite(values))) {
     stop("`x` must not contain infinite values (Inf or -Inf).", call. = FALSE)

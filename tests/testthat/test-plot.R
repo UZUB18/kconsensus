@@ -52,7 +52,7 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
   expect_s3_class(p$data$k_factor, "factor")
   expect_identical(p$data$votes, c(0L, 0L, 4L, 1L, 0L))
   expect_equal(p$data$agreement_percent, c(0, 0, 80, 20, 0))
-  expect_identical(p$data$label, c("0 (0%)", "0 (0%)", "4 (80%)", "1 (20%)", "0 (0%)"))
+  expect_identical(p$data$label, c("", "", "4 (80%)", "1 (20%)", ""))
   expect_identical(
     as.character(p$data$role),
     c(
@@ -60,7 +60,7 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
       "Other evaluated K", "Other evaluated K"
     )
   )
-  expect_match(p$labels$subtitle, "Selected consensus candidate: K = 3", fixed = TRUE)
+  expect_match(p$labels$subtitle, "Majority: K = 3 (4 of 5 valid votes, 80%)", fixed = TRUE)
   expect_match(p$labels$subtitle, "Eligible denominator: 5 of 6 methods", fixed = TRUE)
   expect_match(p$labels$subtitle, "WCSS Elbow [ambiguous]", fixed = TRUE)
   expect_match(
@@ -73,6 +73,29 @@ test_that("consensus plot shows exact counts, denominator, abstentions, and cave
     "K-means favors compact, roughly spherical groups.",
     fixed = TRUE
   )
+})
+
+test_that("a plurality leader is labelled as lacking a majority", {
+  scores <- data.frame(k = 2:5, score = c(0.2, 0.6, 0.4, 0.3))
+  res <- as_kconsensus(compute_consensus(list(
+    method_recommendation("silhouette", 3L, "valid", scores = scores),
+    method_recommendation("dunn", 3L, "valid", scores = scores),
+    method_recommendation("davies_bouldin", 4L, "valid", scores = scores),
+    method_recommendation("calinski_harabasz", 5L, "valid", scores = scores),
+    method_recommendation("custom", 2L, "valid", scores = scores)
+  )))
+  p <- plot(res, type = "consensus")
+
+  expect_identical(
+    as.character(p$data$role),
+    c("Other evaluated K", "Leading K (no majority)", "Other evaluated K", "Other evaluated K")
+  )
+  expect_match(
+    p$labels$subtitle,
+    "Plurality, no majority: K = 3 (2 of 5 valid votes, 40%)",
+    fixed = TRUE
+  )
+  expect_no_warning(ggplot2::ggplot_build(p))
 })
 
 test_that("ties and zero-vote states are explicit and never pick an arbitrary winner", {
@@ -95,7 +118,7 @@ test_that("ties and zero-vote states are explicit and never pick an arbitrary wi
   p_zero <- plot(zero_res, type = "consensus")
 
   expect_identical(as.character(p_zero$data$role), rep("No eligible votes", 3L))
-  expect_identical(p_zero$data$label, rep("0 (NA)", 3L))
+  expect_identical(p_zero$data$label, rep("", 3L))
   expect_match(p_zero$labels$subtitle, "No eligible votes cast (agreement undefined)", fixed = TRUE)
   expect_match(p_zero$labels$subtitle, "Eligible denominator: 0 of 2 methods", fixed = TRUE)
 
@@ -218,6 +241,9 @@ test_that("matrix plot preserves K = 1 untested cells, marks excluded methods, a
   expect_identical(as.character(dunn_pref$cell_state), "Excluded preference")
   expect_match(as.character(dunn_pref$method_label), "Dunn [excluded]", fixed = TRUE)
 
+  indices_panels <- levels(plot(res, type = "indices")$data$panel)
+  expect_true(any(grepl("Dunn | K = 4 [excluded]", indices_panels, fixed = TRUE)))
+
   elbow_cells <- df[df$method == "elbow", , drop = FALSE]
   expect_identical(as.character(elbow_cells$cell_state), rep("Evaluated", 5L))
   expect_match(unique(as.character(elbow_cells$method_label)), "WCSS Elbow [ambiguous]", fixed = TRUE)
@@ -235,4 +261,133 @@ test_that("plots support standard ggplot2 customization and validate inputs", {
   expect_snapshot(error = TRUE, plot.kconsensus_result(list(a = 1)))
   expect_snapshot(error = TRUE, plot.kconsensus_result(res, y = 1:3))
   expect_snapshot(error = TRUE, plot.kconsensus_result(res, type = "unknown"))
+})
+
+# Drawing runs the facet labeller, themes and scales that ggplot_build() skips.
+expect_renders <- function(p) {
+  withr::local_pdf(NULL)
+  expect_no_warning(grob <- ggplot2::ggplotGrob(p))
+  expect_s3_class(grob, "gtable")
+}
+
+plot_vote <- function(method, k, scores = data.frame(k = 2:5, score = c(0.2, 0.6, 0.4, 0.3))) {
+  method_recommendation(method, k, "valid", scores = scores)
+}
+
+test_that("every plot type draws for every support level", {
+  failed <- method_recommendation("z", reason = "Failed.", scores = data.frame(k = 2:5))
+  results <- list(
+    unanimous = compute_consensus(list(plot_vote("a", 3L), plot_vote("b", 3L))),
+    majority = sample_consensus_fixture(),
+    plurality = compute_consensus(list(
+      plot_vote("a", 3L), plot_vote("b", 3L), plot_vote("c", 4L),
+      plot_vote("d", 5L), plot_vote("e", 2L)
+    )),
+    single_vote = compute_consensus(list(plot_vote("a", 3L), failed)),
+    tie = compute_consensus(list(plot_vote("a", 3L), plot_vote("b", 4L))),
+    no_valid_votes = compute_consensus(list(failed))
+  )
+  for (status in names(results)) {
+    expect_identical(results[[status]]$status, status)
+    for (type in c("consensus", "indices", "matrix")) {
+      expect_renders(plot(results[[status]], type = type))
+    }
+  }
+})
+
+test_that("undefined scores are shown as undefined in the matrix and indices views", {
+  res <- compute_consensus(list(
+    plot_vote("silhouette", 4L, data.frame(k = 2:5, score = c(0.4, 0.45, 0.5, 0.3))),
+    method_recommendation(
+      "dunn", NA_integer_, "undefined", "Non-finite scores at K = 3.",
+      scores = data.frame(k = 2:5, score = c(0.4, NA, 0.5, 0.3))
+    ),
+    method_recommendation(
+      "davies_bouldin", NA_integer_, "undefined", "Non-finite scores at K = 2, 3, 4, 5.",
+      scores = data.frame(k = 2:5, score = rep(NA_real_, 4))
+    )
+  ))
+
+  matrix_plot <- plot(res, type = "matrix")
+  dunn_k3 <- matrix_plot$data[matrix_plot$data$method == "dunn" & matrix_plot$data$k == 3L, ]
+  expect_identical(as.character(dunn_k3$cell_state), "Undefined score")
+  expect_identical(dunn_k3$cell_label, "NA")
+
+  indices_plot <- plot(res, type = "indices")
+  panels <- levels(indices_plot$data$panel)
+  expect_true("Dunn | Abstained [undefined] | Undefined at K = 3" %in% panels)
+  expect_true("Davies-Bouldin | Abstained [undefined] | All scores undefined" %in% panels)
+  # Notes live in the panel titles, not in a text layer that can be clipped.
+  expect_false(any(vapply(indices_plot$layers, function(layer) {
+    inherits(layer$geom, "GeomText")
+  }, logical(1))))
+  expect_renders(matrix_plot)
+  expect_renders(indices_plot)
+
+  no_scores <- compute_consensus(list(
+    plot_vote("silhouette", 3L),
+    method_recommendation("gap", reason = "Gap failed.")
+  ))
+  expect_true(
+    "Gap Statistic | Abstained [undefined] | No scores available" %in%
+      levels(plot(no_scores, type = "indices")$data$panel)
+  )
+})
+
+test_that("plots stay legible at small sizes", {
+  failed <- method_recommendation("z", reason = "Failed.", scores = data.frame(k = 2:5))
+  many_abstentions <- compute_consensus(list(
+    plot_vote("silhouette", 3L),
+    method_recommendation(
+      "calinski_harabasz", reason = "Non-finite scores at K = 3.",
+      scores = data.frame(k = 2:5, score = c(10, NA, 20, 15))
+    ),
+    method_recommendation("davies_bouldin", reason = "Non-finite scores.", scores = data.frame(k = 2:5)),
+    method_recommendation("dunn", reason = "Non-finite scores.", scores = data.frame(k = 2:5)),
+    method_recommendation("gap", reason = "Gap failed."),
+    method_recommendation("elbow", NA_integer_, "ambiguous", "No threshold.", scores = data.frame(k = 2:5))
+  ))
+
+  # The list of methods that did not vote wraps instead of running off the plot.
+  subtitle_lines <- strsplit(plot(many_abstentions)$labels$subtitle, "\n")[[1]]
+  expect_gt(length(subtitle_lines), 3L)
+  expect_true(all(nchar(subtitle_lines) <= 62L))
+
+  # A legend with more than three keys uses two rows; two keys fit on one.
+  matrix_plot <- plot(many_abstentions, type = "matrix")
+  expect_identical(length(unique(matrix_plot$data$cell_state)), 4L)
+  expect_identical(matrix_plot$guides$guides$fill$params$nrow, 2L)
+  few_keys <- plot(compute_consensus(list(plot_vote("a", 3L), failed)), type = "matrix")
+  expect_identical(few_keys$guides$guides$fill$params$nrow, 1L)
+
+  # Overlapping K labels are dropped, and the legend keeps a fixed order.
+  wide <- compute_consensus(list(
+    plot_vote("a", 2L, data.frame(k = 2:15, score = c(1, seq(0.9, 0.3, length.out = 13)))),
+    plot_vote("b", 3L, data.frame(k = 2:15, score = c(0.5, 1, seq(0.9, 0.3, length.out = 12)))),
+    failed
+  ))
+  indices_plot <- plot(wide, type = "indices")
+  x_scale <- indices_plot$scales$get_scales("x")
+  expect_true(isTRUE(x_scale$guide$params$check.overlap))
+  colour_scale <- indices_plot$scales$get_scales("colour")
+  expect_identical(colour_scale$breaks, c("Eligible preferred K", "Evaluated K"))
+
+  for (p in list(plot(wide), plot(many_abstentions, type = "matrix"), indices_plot)) {
+    withr::with_options(list(), {
+      grDevices::png(tempfile(fileext = ".png"), width = 600, height = 450, res = 96)
+      expect_no_warning(print(p))
+      grDevices::dev.off()
+    })
+  }
+})
+
+test_that("an upper-boundary winner is called out in every plot caption", {
+  res <- suppressWarnings(compute_consensus(list(plot_vote("a", 5L), plot_vote("b", 5L))))
+  for (type in c("consensus", "indices", "matrix")) {
+    expect_match(
+      plot(res, type = type)$labels$caption,
+      "Warning: Winner lies at the upper tested K boundary.",
+      fixed = TRUE
+    )
+  }
 })

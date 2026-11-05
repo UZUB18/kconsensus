@@ -19,16 +19,7 @@ compute_elbow <- function(k, wcss, min_strength = NULL) {
       call. = FALSE
     )
   }
-  if (!is.null(min_strength) && (
-    !is.numeric(min_strength) || is.complex(min_strength) ||
-      length(min_strength) != 1L || !is.null(dim(min_strength)) ||
-      is.na(min_strength) || !is.finite(min_strength) ||
-      min_strength < 0 || min_strength > 1
-  )) {
-    stop("`min_strength` must be NULL or a single finite number from 0 to 1.",
-      call. = FALSE
-    )
-  }
+  check_min_strength(min_strength)
 
   ordering <- order(k)
   curve <- data.frame(
@@ -92,15 +83,16 @@ compute_elbow <- function(k, wcss, min_strength = NULL) {
   result
 }
 
-plot_elbow <- function(elbow) {
-  k <- wcss <- NULL
-  ggplot2::ggplot(elbow$curve, ggplot2::aes(x = k, y = wcss)) +
-    ggplot2::geom_line() +
-    ggplot2::geom_point() +
-    ggplot2::labs(
-      title = "WCSS elbow curve",
-      x = "Number of clusters (K)",
-      y = "Total within-cluster sum of squares",
-      caption = elbow$reason
+check_min_strength <- function(min_strength) {
+  if (!is.null(min_strength) && (
+    !is.numeric(min_strength) || is.complex(min_strength) ||
+      length(min_strength) != 1L || !is.null(dim(min_strength)) ||
+      is.na(min_strength) || !is.finite(min_strength) ||
+      min_strength < 0 || min_strength > 1
+  )) {
+    stop("`min_strength` must be NULL or a single finite number from 0 to 1.",
+      call. = FALSE
     )
+  }
+  invisible(min_strength)
 }

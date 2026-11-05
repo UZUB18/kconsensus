@@ -1,6 +1,6 @@
 # kconsensus: implementation and validation showcase
 
-**Development version:** 0.0.0.9000  
+**Version:** 0.1.0  
 **Work documented:** November 5, 2026  
 **Status:** implemented and software-checked; statistical limitations remain explicit.
 
@@ -22,7 +22,7 @@ and a separate Gap seed-stability study.
 
 | Evidence layer | Completed work | What it establishes |
 |---|---|---|
-| Unit tests | 422 assertions passed, without warnings | The tested implementation contracts hold |
+| Unit tests | 698 assertions passed, without warnings; 99.9% line coverage | The tested implementation contracts hold |
 | Separate-session package check | 0 errors, 0 warnings, 0 notes | The package passes the recorded development check |
 | Repeated-data study | 600 generated datasets; 700 consensus evaluations | Behavior under six specified designs and a paired K-range comparison |
 | Supplied benchmark | 19 valid runs and five expected-error cases | Reference agreement, input rejection and behavior on the supplied fixtures |
@@ -164,17 +164,21 @@ no claim about population cluster structure follows from that status.
 
 | Situation | Implemented behavior |
 |---|---|
-| Unique highest vote count | Return that K, even if it is only a plurality |
+| Unique highest vote count | Return that K and grade its support in `status`: `unanimous`, `majority` (more than half of the valid votes), `plurality` (most votes, no majority) or `single_vote` (only one method voted) |
 | Tie for highest vote count | Return all tied candidates and `recommended_k = NA` |
 | Legitimate ambiguity or undefined method | Exclude its vote and retain the reason |
 | Explicitly ineligible method | Exclude it without deleting its evidence |
 | No valid votes | Return no recommendation; agreement percentages are `NA` |
-| Unique winner at the global highest tested K | Emit and retain an upper-boundary warning |
+| Unique winner at the global highest tested K | Emit and retain an upper-boundary warning and `upper_boundary` flag |
+| Winner is the smallest K that every method voting for it evaluated | Add a descriptive `lower_boundary` flag |
+| A method votes for K = 1 while others vote for K >= 2 | Add a descriptive `single_cluster_vote` flag; the vote itself is unchanged |
 | Method disagreement | Preserve each supplied score curve and diagnostics |
 
-The public calculation pipeline remains fail-fast for calculation errors.
-Although adapters can represent unavailable methods, the public wrapper does
-not automatically turn every failed calculation into a partial consensus.
+Invalid arguments and data still stop `kconsensus()` before any fitting.
+Failures during the calculation do not: a failed or non-converged K-means fit
+leaves that K undefined, so the methods that need it abstain; non-finite index
+values make only that index abstain; and a Gap failure makes Gap abstain. A
+warning lists the failures, and each abstention keeps its reason.
 
 ### Worked voting example
 
@@ -222,9 +226,12 @@ result <- kconsensus(
   elbow_min_strength = NULL
 )
 
+result            # short overview
+summary(result)   # support, runner-up, abstentions, flags and caveats
+
 result$recommended_k
-result$agreement
-result$methods
+as.data.frame(result)                      # one row per method
+as.data.frame(result, what = "scores")     # every method score at every K
 ```
 
 This reproduces the recorded stress-test configuration. Reproducibility
@@ -233,14 +240,15 @@ session information.
 
 | Result field | Contents |
 |---|---|
-| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one |
+| `recommended_k`, `tied_candidates`, `status` | Decision or explicit lack of one, with graded support (`unanimous`, `majority`, `plurality`, `single_vote`, `tie`, `no_valid_votes`) |
+| `flags` | Descriptive notes: `upper_boundary`, `lower_boundary`, `single_cluster_vote` |
 | `agreement` | Votes and agreement percentage for every evaluated candidate |
 | `methods` | Recommendations, eligibility, inclusion, reasons and range endpoints |
 | `recommendations` | Full per-method score curves and diagnostics |
 | `n_valid_methods` | Actual voting denominator |
 | `boundary_warning` | Upper tested-range warning flag |
 | `fits` | Central K-means solutions, named by K |
-| `settings` | Candidate vector, seed, B and elbow threshold |
+| `settings` | Candidate vector, selected methods, seed, B, nstart and elbow threshold |
 | `preprocessing` | Supplied-data and no-package-standardization flags |
 
 The exact tested candidate set is available in each method's `scores$k`;
@@ -383,6 +391,30 @@ generating groups. There were no calculation errors in the 700 evaluations;
 the statistical failure modes were retained rather than treated as software
 errors or hidden by tuning.
 
+### Graded support on the same datasets
+
+A re-run with version 0.1.0 reproduced every recommendation, tie, Gap choice
+and partition metric above exactly, and added the support level and flags:
+
+| Scenario | K range | Unanimous | Majority | Plurality | Tie | Unanimous or majority with no flag |
+|---|---|---:|---:|---:|---:|---:|
+| Separated Gaussian groups | 2:6 | 99 | 1 | 0 | 0 | 100 |
+| One very small group | 2:6 | 60 | 40 | 0 | 0 | 100 |
+| Uniform data | 2:6 | 1 | 58 | 24 | 17 | 16 |
+| Overlapping groups | 2:6 | 0 | 32 | 38 | 30 | 1 |
+| Overlapping groups | 2:15 | 0 | 27 | 48 | 25 | 1 |
+| Elongated groups | 2:6 | 0 | 45 | 31 | 24 | 0 |
+| High-dimensional noise | 2:6 | 0 | 100 | 0 | 0 | 0 |
+
+Before grading, 83 uniform-data runs looked like ordinary winners. Now only 16
+receive unanimous or majority support without a flag; the rest are pluralities,
+ties, or flagged, mostly because Gap chose K = 1. Clear structure keeps a clean
+signal: all 100 separated-data runs are unanimous or majority with no flag.
+The small-group design is the exception that matters: all 100 runs report
+strong, unflagged support for K = 2 although three groups generated the data.
+The grading describes agreement; it cannot detect a group the methods all
+miss.
+
 ## Supplied benchmark
 
 The supplied collection in
@@ -409,6 +441,11 @@ and the constant feature were retained.
 | `high_dim_noise_3` | 2:10 | 2 | 80% | 0.530 |
 | `many_12` | 2:10 | 10; upper-bound warning | 100% | 0.840 |
 | `many_12` | 2:15 | Tie: 10 and 13 | 40% each | Not defined |
+
+With version 0.1.0 the uniform and single-Gaussian controls (both 40%) are
+reported as pluralities flagged `single_cluster_vote`, `overlap_3` as a
+plurality flagged at the upper boundary, and `high_dim_noise_3` as a majority
+flagged `lower_boundary`. The re-run reproduced every number in this table.
 
 For contaminated fixtures, the primary recovery metric excludes truth label
 -1 **only when scoring recovery**. All rows remain in clustering. A secondary
@@ -454,6 +491,9 @@ limitation, not a vote-counting or reference-score mismatch.
 | Dunn | 6 | 10 |
 | Gap | 1 | 1 |
 | Consensus | 6, with 40% | 2, with 40% |
+
+Both outcomes are now reported with `status = "plurality"` (no majority) and
+carry the `single_cluster_vote` flag, rather than as plain winners.
 
 The internal indices answer: **Which tested subdivision ranks best?** They do
 not establish that subdivision is warranted. They cannot evaluate K = 1 and
@@ -599,19 +639,19 @@ for (type in names(sizes)) {
 
 | Open item | Current position |
 |---|---|
-| Gap-consensus disagreement diagnostic | Proposed, **not yet implemented**. A descriptive conflict warning would not establish that no clusters exist. |
+| Gap-consensus disagreement diagnostic | Implemented as the descriptive `single_cluster_vote` flag. It does not establish that no clusters exist, and it does not change any vote. |
 | No-clusters calibration | Not established by seed stability. It needs independently generated null and clustered datasets and explicit error criteria. |
 | Elbow cutoff | No validated default. Automatic elbow selection abstains unless the caller supplies an uncalibrated threshold. |
 | Model shape | General K-means caveat is displayed. No automatic geometry detector or non-spherical clustering alternative was implemented. |
-| Large datasets | Pairwise-distance memory and simulation runtime remain important limits; optional distance-based scoring is not implemented. |
-| Calculation failures | Public calculations remain fail-fast; general partial-result recovery is not implemented. |
-| Release metadata | Author name/email are still placeholders. Publication metadata must be completed without inventing identities or URLs. |
-| Website and project introduction | The original README remains unchanged. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
+| Large datasets | `methods` can leave out Gap and the distance-based indices, `nstart` and `B` trade precision for speed, and progress is reported in interactive sessions. Gap's reference simulations still run serially. |
+| Calculation failures | Failed fits, undefined indices and Gap failures now become reasoned abstentions with a warning. A method still abstains entirely if any tested K is undefined for it; scoring the remaining K is not implemented. |
+| Release metadata | The maintainer is UZUB18 <trbuzu@gmail.com>. A CRAN submission would usually list a person's full name rather than a handle. |
+| Website and project introduction | The README and the `choosing-k` vignette now introduce the package. The optional pkgdown check needs a real site URL; it was not a passing website validation. |
 | Automated formatting | `air` was unavailable. Passing R checks does not mean an automatic formatter ran. |
 
 No warning rule or arbitrary confidence threshold was added as part of the
 Gap stability investigation. This Markdown showcase also does not change the
-statistical engine or replace the existing README.
+statistical engine.
 
 ## Main conclusion
 
