@@ -1,9 +1,17 @@
 #' Compare K-means cluster counts using method agreement
 #'
-#' Fits K-means once for each candidate K and scores those fits with the
-#' requested methods. Gap uses separate reference simulations and can
-#' recommend one cluster. Variables are not standardized: pass `scale(x)`
-#' explicitly when appropriate.
+#' Fits K-means once for each candidate K for the internal indices and elbow.
+#' Gap independently refits both the observed data and simulated reference
+#' data, so its partitions may differ from the stored fits. It can recommend
+#' one cluster. Variables are not standardized: pass `scale(x)` explicitly
+#' when appropriate.
+#'
+#' Gap retains `cluster::clusGap()`'s historical `d.power = 1` for compatibility
+#' with existing results, using unsquared distances rather than the squared
+#' distances of `d.power = 2`. It uses PCA-rotated reference data
+#' (`spaceH0 = "scaledPCA"`) and `firstSEmax` selection with `SE.factor = 1`.
+#' These settings can affect recommendations; agreement is not a sensitivity
+#' analysis of these choices.
 #'
 #' Invalid arguments stop immediately, before any fitting. A calculation that
 #' fails during the analysis does not: if K-means fails or does not converge
@@ -23,17 +31,19 @@
 #' @param x A finite numeric matrix or numeric data frame.
 #' @param k At least two distinct candidate cluster counts, with
 #'   `2 <= k < nrow(x)` and enough distinct observations for every candidate.
-#'   Gap also evaluates every K from 1 to `max(k)`.
+#'   When Gap is enabled, candidates must include every integer from 2 to
+#'   `max(k)`, in any order. Gap also evaluates K = 1, which has no stored fit.
 #' @param methods The methods that vote: any of `"silhouette"`,
 #'   `"calinski_harabasz"`, `"davies_bouldin"`, `"dunn"`, `"gap"` and
-#'   `"elbow"`. All six by default.
+#'   `"elbow"`. All six are calculated by default: five voting methods plus
+#'   an optional elbow vote, enabled by setting `elbow_min_strength`.
 #' @param seed A nonnegative integer controlling reproducible local RNG scopes.
 #'   The caller's random-number state is left unchanged.
 #' @param B Number of Gap reference simulations; at least two. Small values are
 #'   useful for quick looks and examples, not precise Monte Carlo estimates.
 #' @param nstart Number of random starts for every K-means fit, including Gap's
-#'   fits to simulated data. Fewer starts are faster but more likely to miss the
-#'   best partition.
+#'   fits to observed and simulated data. Fewer starts are faster but more likely
+#'   to miss the best partition.
 #' @param elbow_min_strength Optional user-supplied, uncalibrated elbow threshold.
 #'   The elbow method abstains when this is `NULL`.
 #' @param verbose Show progress messages? Defaults to the `kconsensus.verbose`
@@ -89,6 +99,11 @@ kconsensus <- function(
   input <- validate_input(x, k)
   if (length(input$k) < 2L) {
     stop("`k` must contain at least two candidate cluster counts to compare.",
+      call. = FALSE
+    )
+  }
+  if ("gap" %in% methods && (min(k) != 2 || length(k) != max(k) - 1)) {
+    stop("When Gap is enabled, `k` must be contiguous and start at 2 (2:max(k)).",
       call. = FALSE
     )
   }

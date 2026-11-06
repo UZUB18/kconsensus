@@ -26,14 +26,25 @@ library(kconsensus)
 
 Before running K-means you have to choose K, the number of clusters. Several
 methods suggest a K: silhouette, Calinski-Harabasz, Davies-Bouldin, Dunn, the
-gap statistic and the elbow of the within-cluster sum of squares. When they
-agree, the choice is easy. When they disagree, most tools still return a single
-number.
+gap statistic and the elbow of the within-cluster sum of squares. Agreement
+helps compare candidates, but does not establish the true number of groups.
+When methods disagree, most tools still return a single number.
 
-`kconsensus` runs all of these methods on the same K-means fits, counts their
-votes and tells you how strong that agreement is. It can also say that the
-result is inconclusive. This vignette shows both situations and what to
-conclude from each.
+`kconsensus` shares stored K-means fits across the internal indices and elbow;
+Gap independently refits both the observed and reference data, so its
+partitions may differ. There are five voting methods by default, plus an
+optional elbow vote. The package counts valid votes and reports their
+agreement, including inconclusive results.
+
+With Gap enabled, `k` must include every integer from 2 to `max(k)`, in any
+order. Gap also considers K = 1 (no subdivision), which has no stored fit.
+Without Gap, sparse ranges and ranges starting above 2 are allowed.
+
+Gap keeps `cluster::clusGap()`'s historical `d.power = 1` for compatibility
+with existing results: it uses unsquared distances, whereas `d.power = 2`
+uses squared distances. Reference data use `spaceH0 = "scaledPCA"`, and
+selection uses `firstSEmax` with `SE.factor = 1`. These settings can affect K;
+the existing validation does not measure sensitivity to `d.power`.
 
 The examples use `B = 20` Gap reference simulations so that the vignette
 builds quickly. Use the default `B = 100` or more for real analyses.

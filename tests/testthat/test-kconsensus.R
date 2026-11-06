@@ -29,6 +29,45 @@ test_that("the public interface preserves RNG state and reproducibility", {
   expect_identical(get(".Random.seed", envir = globalenv()), before)
 })
 
+test_that("Gap rejects incompatible K ranges before fitting", {
+  x <- scale(iris[, 1:4])
+  local_mocked_bindings(fit_clusters = function(...) stop("Fitting should not start."))
+
+  for (methods in list("gap", method_names)) {
+    expect_error(
+      kconsensus(x, k = c(2, 4, 6), methods = methods, B = 2),
+      "contiguous"
+    )
+    expect_error(
+      kconsensus(x, k = 4:8, methods = methods, B = 2),
+      "start at 2"
+    )
+  }
+})
+
+test_that("candidate order and sparse ranges without Gap remain supported", {
+  x <- scale(iris[, 1:4])
+  ordered <- kconsensus(x, k = 2:4, methods = "gap", B = 2)
+  shuffled <- kconsensus(x, k = c(4, 2, 3), methods = "gap", B = 2)
+
+  expect_identical(shuffled$recommendations, ordered$recommendations)
+  expect_named(shuffled$fits, c("4", "2", "3"))
+  for (k in list(c(2, 4, 6), 4:8)) {
+    result <- kconsensus(x, k = k, methods = "calinski_harabasz")
+    expect_named(result$fits, as.character(k))
+    expect_true(result$recommended_k %in% k)
+  }
+})
+
+test_that("Gap can still recommend K = 1 outside the stored candidate fits", {
+  x <- as.matrix(expand.grid(a = 1:5, b = 1:5))
+  result <- kconsensus(x, k = 2:3, methods = "gap", B = 5, seed = 3647L)
+
+  expect_identical(result$recommended_k, 1L)
+  expect_named(result$fits, c("2", "3"))
+  expect_identical(result$recommendations$gap$scores$k, 1:3)
+})
+
 test_that("undefined indices make only the affected methods abstain", {
   # Four distinct points, so K = 4 has zero within-cluster spread.
   x <- rbind(

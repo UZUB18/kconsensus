@@ -15,7 +15,7 @@
 # ---- SETTINGS ---------------------------------------------------------------
 data_file <- ""          # path to a .csv or .xlsx file; "" opens a file dialog
 exclude_columns <- c()   # columns that are not measurements, e.g. c("patient_id", "year")
-candidate_k <- 2:10      # the numbers of clusters to compare
+candidate_k <- 2:10      # every integer from 2 to the largest K (required by Gap)
 standardize <- TRUE      # TRUE when columns use different units (usually right)
 gap_simulations <- 100   # 100 for final results; 20 for a quick first look
 # ------------------------------------------------------------------------------
@@ -124,7 +124,8 @@ if (is.na(best_k)) {
 } else if (best_k == 1L) {
   cat("Best supported K is 1: the data may not split into clusters at all.\n")
 } else if (result$status %in% c("unanimous", "majority") && nrow(result$flags) == 0L) {
-  cat(sprintf("Use K = %d (%s support from the methods).\n", best_k, result$status))
+  cat(sprintf("Best-supported K = %d (%s method agreement).\n", best_k, result$status))
+  cat("Inspect cluster quality and model assumptions before adopting K.\n")
   cat("Each row's cluster is in clusters.csv.\n")
 } else {
   cat(sprintf("K = %d is only weakly supported (%s%s).\n", best_k,

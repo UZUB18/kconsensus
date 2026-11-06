@@ -21,11 +21,13 @@ kconsensus(
 
 \item{k}{At least two distinct candidate cluster counts, with
 \verb{2 <= k < nrow(x)} and enough distinct observations for every candidate.
-Gap also evaluates every K from 1 to \code{max(k)}.}
+When Gap is enabled, candidates must include every integer from 2 to
+\code{max(k)}, in any order. Gap also evaluates K = 1, which has no stored fit.}
 
 \item{methods}{The methods that vote: any of \code{"silhouette"},
 \code{"calinski_harabasz"}, \code{"davies_bouldin"}, \code{"dunn"}, \code{"gap"} and
-\code{"elbow"}. All six by default.}
+\code{"elbow"}. All six are calculated by default: five voting methods plus
+an optional elbow vote, enabled by setting \code{elbow_min_strength}.}
 
 \item{seed}{A nonnegative integer controlling reproducible local RNG scopes.
 The caller's random-number state is left unchanged.}
@@ -34,8 +36,8 @@ The caller's random-number state is left unchanged.}
 useful for quick looks and examples, not precise Monte Carlo estimates.}
 
 \item{nstart}{Number of random starts for every K-means fit, including Gap's
-fits to simulated data. Fewer starts are faster but more likely to miss the
-best partition.}
+fits to observed and simulated data. Fewer starts are faster but more likely
+to miss the best partition.}
 
 \item{elbow_min_strength}{Optional user-supplied, uncalibrated elbow threshold.
 The elbow method abstains when this is \code{NULL}.}
@@ -68,12 +70,20 @@ Use \code{\link[=summary.kconsensus_result]{summary.kconsensus_result()}} for an
 \code{\link[=as.data.frame.kconsensus_result]{as.data.frame.kconsensus_result()}} to extract tables.
 }
 \description{
-Fits K-means once for each candidate K and scores those fits with the
-requested methods. Gap uses separate reference simulations and can
-recommend one cluster. Variables are not standardized: pass \code{scale(x)}
-explicitly when appropriate.
+Fits K-means once for each candidate K for the internal indices and elbow.
+Gap independently refits both the observed data and simulated reference
+data, so its partitions may differ from the stored fits. It can recommend
+one cluster. Variables are not standardized: pass \code{scale(x)} explicitly
+when appropriate.
 }
 \details{
+Gap retains \code{cluster::clusGap()}'s historical \code{d.power = 1} for compatibility
+with existing results, using unsquared distances rather than the squared
+distances of \code{d.power = 2}. It uses PCA-rotated reference data
+(\code{spaceH0 = "scaledPCA"}) and \code{firstSEmax} selection with \code{SE.factor = 1}.
+These settings can affect recommendations; agreement is not a sensitivity
+analysis of these choices.
+
 Invalid arguments stop immediately, before any fitting. A calculation that
 fails during the analysis does not: if K-means fails or does not converge
 at some K, or an index is undefined there, the methods that need that K

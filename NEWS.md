@@ -1,3 +1,12 @@
+# kconsensus (development version)
+
+* With Gap enabled, `k` must cover every integer from 2 to `max(k)` (in any
+  order). Sparse and truncated ranges now fail before fitting; without Gap
+  they remain supported. Gap can still choose K = 1 without a stored fit.
+* Clarify Gap's independent observed-data fits and fixed selection settings,
+  the default five-vote denominator, and the limits of method agreement in
+  the README, help, vignette and CSV helper.
+
 # kconsensus 0.1.0
 
 First usable release.

@@ -5,13 +5,13 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 <!-- badges: end -->
 
-**Choose the number of clusters for K-means, and know how much to trust it.**
+**Compare cluster counts for K-means, and inspect method agreement.**
 
-kconsensus runs six standard methods (silhouette, Calinski-Harabasz,
-Davies-Bouldin, Dunn, the gap statistic and the elbow) on the same K-means
-fits and counts their votes. Unlike tools that always return one number, it
-tells you how strong the agreement is, and says so when there is no clear
-answer.
+kconsensus compares five voting methods (silhouette, Calinski-Harabasz,
+Davies-Bouldin, Dunn and the gap statistic), plus an optional elbow vote.
+The internal indices and elbow share stored K-means fits; Gap refits the data
+independently. The package counts their votes, reports how strong the agreement
+is, and says so when there is no clear answer.
 
 ![On three clear groups every method votes K = 3. On pure noise the votes scatter, and kconsensus reports a weak plurality instead of a confident answer.](man/figures/README-hero.png)
 
@@ -50,14 +50,15 @@ file.copy(system.file("scripts", "find_k_for_my_data.R", package = "kconsensus")
 file.edit("find_k.R")   # then click Source and pick your file
 ```
 
-It ends with a plain answer such as `Use K = 3 (unanimous support from the methods).`
+It reports the best-supported K and reminds you to inspect cluster quality and
+model assumptions before adopting it.
 
 ## Reading the answer
 
 | Status | Meaning | What to do |
 |---|---|---|
-| `unanimous` | Every method chose the same K | Use it |
-| `majority` | More than half chose it | Use it, after a look at the plots |
+| `unanimous` | Every valid method chose the same K | Strong method agreement; inspect cluster quality and model assumptions before adopting K |
+| `majority` | More than half of valid votes chose it | Majority agreement; inspect cluster quality and model assumptions before adopting K |
 | `plurality` | Most votes, but no majority | Weak: inspect the plots before using it |
 | `single_vote` | Only one method could vote | No agreement to assess |
 | `tie` | Several K share the most votes | No answer; try another K range |
@@ -76,7 +77,13 @@ statistic says the data may not split at all).
   Nothing is standardized for you.
 * **Agreement is not proof.** Methods can agree on noise or miss a very small
   group. Vote percentages describe agreement between methods, not the
-  probability that K is right.
+  probability that K is right. In the [simulation study](validation/README.md),
+  all 100 small-group trials chose K = 2 instead of the three generating groups,
+  despite unanimous or majority support with no flags.
+* **Gap needs a complete range:** include every integer from 2 to `max(k)`
+  (for example, `k = 2:10`). Sparse ranges or ranges starting above 2 are allowed
+  only when `"gap"` is omitted from `methods`. Gap can still recommend K = 1;
+  this means no subdivision and has no partition stored in `result$fits`.
 * **Big data?** The gap statistic is the slow part. For a first look use
   `B = 20`, or skip it with
   `methods = c("silhouette", "calinski_harabasz", "davies_bouldin", "elbow")`.
@@ -84,7 +91,7 @@ statistic says the data may not split at all).
   session's random-number state.
 
 <details>
-<summary><b>The six methods</b></summary>
+<summary><b>Five voting methods and the optional elbow vote</b></summary>
 
 | Method | Chooses | Implementation |
 |---|---|---|
@@ -97,7 +104,16 @@ statistic says the data may not split at all).
 
 A method abstains, and leaves the vote count, when its best score is an exact
 tie, a score is undefined, or its calculation fails. `summary()` always gives
-the reason.
+the reason. Elbow abstains by default (`elbow_min_strength = NULL`), so the
+default denominator is at most five valid votes.
+
+Gap independently runs K-means on both the observed and reference data; its
+partitions may differ from `result$fits`, even with the same `seed` and `nstart`.
+It retains `cluster::clusGap()`'s historical `d.power = 1` (unsquared distances)
+for compatibility with existing results, rather than `d.power = 2` (squared
+distances). References use `spaceH0 = "scaledPCA"`; selection uses `firstSEmax`
+with `SE.factor = 1`. These choices can affect the recommended K; the existing
+validation does not measure sensitivity to `d.power`.
 
 </details>
 
